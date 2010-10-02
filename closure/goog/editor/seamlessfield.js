@@ -480,6 +480,10 @@ goog.editor.SeamlessField.prototype.dispatchBlur = function() {
   // Another point to note is that we do it on a setTimeout to allow for
   // DOM modifications on blur. Otherwise, something like setLoremIpsum will
   // leave a blinking cursor in the field even though it's blurred.
+
+  // Modified for WyzihatKit: don't do this, it prevents toolbars from working
+  // and loses the selection when the editor is out of focus.
+  /*
   if (!goog.editor.BrowserFeature.HAS_CONTENT_EDITABLE &&
       !goog.editor.BrowserFeature.CLEARS_SELECTION_WHEN_FOCUS_LEAVES) {
     var win = this.getEditableDomHelper().getWindow();
@@ -517,6 +521,7 @@ goog.editor.SeamlessField.prototype.dispatchBlur = function() {
       }
     }, this), 0);
   }
+  */
 };
 
 
