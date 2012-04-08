@@ -15,8 +15,8 @@
 
 /**
  * @fileoverview VmlGraphics sub class that uses VML to draw the graphics.
- *
- *
+ * @author arv@google.com (Erik Arvidsson)
+ * @author yoah@google.com (Yoah Bar-David)
  */
 
 
@@ -40,6 +40,8 @@ goog.require('goog.graphics.VmlRectElement');
 goog.require('goog.graphics.VmlTextElement');
 goog.require('goog.math.Size');
 goog.require('goog.string');
+goog.require('goog.style');
+
 
 
 /**
@@ -66,6 +68,7 @@ goog.graphics.VmlGraphics = function(width, height,
   this.handler_ = new goog.events.EventHandler(this);
 };
 goog.inherits(goog.graphics.VmlGraphics, goog.graphics.AbstractGraphics);
+
 
 /**
  * The prefix to use for VML elements
@@ -118,6 +121,7 @@ goog.graphics.VmlGraphics.toCssSize = function(size) {
   return goog.isString(size) && goog.string.endsWith(size, '%') ?
          size : parseFloat(size.toString()) + 'px';
 };
+
 
 /**
  * Multiplies positioning coordinates by COORD_MULTIPLIER to allow sub-pixel
@@ -268,7 +272,7 @@ goog.graphics.VmlGraphics.prototype.setElementFill = function(element, fill) {
   var vmlElement = element.getElement();
   this.removeFill(vmlElement);
   if (fill instanceof goog.graphics.SolidFill) {
-    // NOTE(user): VML does not understand 'transparent' so hard code support
+    // NOTE(arv): VML does not understand 'transparent' so hard code support
     // for it.
     if (fill.getColor() == 'transparent') {
       vmlElement.filled = false;
@@ -289,6 +293,12 @@ goog.graphics.VmlGraphics.prototype.setElementFill = function(element, fill) {
     var gradient = this.createVmlElement('fill');
     gradient.color = fill.getColor1();
     gradient.color2 = fill.getColor2();
+    if (goog.isNumber(fill.getOpacity1())) {
+      gradient.opacity = fill.getOpacity1();
+    }
+    if (goog.isNumber(fill.getOpacity2())) {
+      gradient.opacity2 = fill.getOpacity2();
+    }
     var angle = goog.math.angle(fill.getX1(), fill.getY1(),
         fill.getX2(), fill.getY2());
     // Our angles start from 0 to the right, and grow clockwise.
@@ -586,7 +596,7 @@ goog.graphics.VmlGraphics.prototype.setCoordSize = function(coordWidth,
  */
 goog.graphics.VmlGraphics.prototype.setSize = function(pixelWidth,
     pixelHeight) {
-  // TODO(user): Implement
+  goog.style.setSize(this.getElement(), pixelWidth, pixelHeight);
 };
 
 
@@ -839,12 +849,12 @@ goog.graphics.VmlGraphics.prototype.createGroup = function(opt_group) {
  * @return {number} The width in pixels of the text strings.
  */
 goog.graphics.VmlGraphics.prototype.getTextWidth = function(text, font) {
-  // TODO(user): Implement
+  // TODO(arv): Implement
   return 0;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlGraphics.prototype.enterDocument = function() {
   goog.graphics.VmlGraphics.superClass_.enterDocument.call(this);
   this.handleContainerResize_();
@@ -855,6 +865,8 @@ goog.graphics.VmlGraphics.prototype.enterDocument = function() {
 /**
  * Disposes of the component by removing event handlers, detacing DOM nodes from
  * the document body, and removing references to them.
+ * @override
+ * @protected
  */
 goog.graphics.VmlGraphics.prototype.disposeInternal = function() {
   this.canvasElement = null;

@@ -15,7 +15,6 @@
 /**
  * @fileoverview Emoji Palette renderer implementation.
  *
- *
  */
 
 goog.provide('goog.ui.emoji.EmojiPaletteRenderer');
@@ -25,6 +24,7 @@ goog.require('goog.dom.a11y');
 goog.require('goog.ui.PaletteRenderer');
 goog.require('goog.ui.emoji.Emoji');
 goog.require('goog.ui.emoji.SpriteInfo');
+
 
 
 /**
@@ -52,7 +52,6 @@ goog.inherits(goog.ui.emoji.EmojiPaletteRenderer, goog.ui.PaletteRenderer);
 goog.ui.emoji.EmojiPaletteRenderer.cellId_ = 0;
 
 
-
 /**
  * Url of the img that should be used for cells in the emoji palette that are
  * not filled with emoji, i.e., after all the emoji have already been placed
@@ -64,7 +63,7 @@ goog.ui.emoji.EmojiPaletteRenderer.cellId_ = 0;
 goog.ui.emoji.EmojiPaletteRenderer.prototype.defaultImgUrl_ = null;
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.emoji.EmojiPaletteRenderer.getCssClass = function() {
   return goog.getCssName('goog-ui-emojipalette');
 };
@@ -162,7 +161,7 @@ goog.ui.emoji.EmojiPaletteRenderer.prototype.buildElementFromSpriteMetadata =
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.emoji.EmojiPaletteRenderer.prototype.createCell = function(node, dom) {
   // Create a cell with  the default img if we're out of items, in order to
   // prevent jitter in the table. If there's no default img url, just create an

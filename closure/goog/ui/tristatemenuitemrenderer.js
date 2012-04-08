@@ -15,13 +15,14 @@
 /**
  * @fileoverview Renderer for {@link goog.ui.TriStateMenuItem}s.
  *
- *
+ * @author eae@google.com (Emil A Eklund)
  */
 
 goog.provide('goog.ui.TriStateMenuItemRenderer');
 
 goog.require('goog.dom.classes');
 goog.require('goog.ui.MenuItemRenderer');
+
 
 
 /**

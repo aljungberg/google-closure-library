@@ -33,7 +33,6 @@
  * FastDataNodes can be constructed from JSON-like objects via the function
  * goog.ds.FastDataNode.fromJs.
 
- *
  */
 
 goog.provide('goog.ds.AbstractFastDataNode');
@@ -63,7 +62,7 @@ goog.require('goog.string');
  * @constructor
  * @extends {goog.ds.DataNodeList}
  */
-// TODO(user): Use interfaces when available.
+// TODO(arv): Use interfaces when available.
 goog.ds.AbstractFastDataNode = function(dataName, opt_parent) {
   if (!dataName) {
     throw Error('Cannot create a fast data node without a data name');
@@ -104,6 +103,7 @@ goog.ds.AbstractFastDataNode.prototype.getDataPath = function() {
   }
   return parentPath + this.getDataName();
 };
+
 
 
 /**
@@ -184,7 +184,7 @@ goog.ds.FastDataNode.prototype.set = function(value) {
  * @param {string=} opt_selector Children to include in child list.
  * @return {goog.ds.DataNode|goog.ds.DataNodeList} List of child nodes.
  */
-// TODO(user): This class implements DataNodeList but we don't support interfaces
+// TODO(arv): This class implements DataNodeList but we don't support interfaces
 // yet.
 goog.ds.FastDataNode.prototype.getChildNodes = function(opt_selector) {
   if (!opt_selector || opt_selector == goog.ds.STR_ALL_CHILDREN_SELECTOR) {
@@ -309,6 +309,7 @@ goog.ds.FastDataNode.prototype.clone = function() {
  * Implementation of goog.ds.DataNodeList for FastDataNode.
  */
 
+
 /**
  * Adds a child to this data node.
  * @param {goog.ds.DataNode} value Child node to add.
@@ -392,6 +393,7 @@ goog.ds.FastDataNode.prototype.removeNode = function(name) {
   delete this[name];
   return false;
 };
+
 
 
 /**
@@ -500,7 +502,7 @@ goog.ds.PrimitiveFastDataNode.prototype.getJsObject = function() {
  * @extends {goog.ds.AbstractFastDataNode}
  * @constructor
  */
-// TODO(user): Use interfaces when available.  This implements DataNodeList
+// TODO(arv): Use interfaces when available.  This implements DataNodeList
 // as well.
 goog.ds.FastListNode = function(values, dataName, opt_parent) {
   this.values_ = [];
@@ -533,7 +535,7 @@ goog.ds.FastListNode.prototype.set = function(value) {
  * returning all children.
  * @return {goog.ds.DataNode|goog.ds.DataNodeList} List of child nodes.
  */
-// TODO(user): This class implements DataNodeList but we don't support interfaces
+// TODO(arv): This class implements DataNodeList but we don't support interfaces
 // yet.
 goog.ds.FastListNode.prototype.getChildNodes = function() {
   return this;
@@ -672,6 +674,7 @@ goog.ds.FastListNode.prototype.getJsObject = function() {
 /*
  * Implementation of goog.ds.DataNodeList for FastListNode.
  */
+
 
 /**
  * Adds a child to this data node

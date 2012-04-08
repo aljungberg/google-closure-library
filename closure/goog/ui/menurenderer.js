@@ -16,7 +16,7 @@
  * @fileoverview Renderer for {@link goog.ui.Menu}s.
  *
  * @author robbyw@google.com (Robby Walker)
- *
+ * @author pupius@google.com (Daniel Pupius)
  */
 
 goog.provide('goog.ui.MenuRenderer');
@@ -27,6 +27,7 @@ goog.require('goog.dom.a11y.Role');
 goog.require('goog.dom.a11y.State');
 goog.require('goog.ui.ContainerRenderer');
 goog.require('goog.ui.Separator');
+
 
 
 /**
@@ -108,7 +109,7 @@ goog.ui.MenuRenderer.prototype.getCssClass = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.MenuRenderer.prototype.initializeDom = function(container) {
   goog.ui.MenuRenderer.superClass_.initializeDom.call(this, container);
 

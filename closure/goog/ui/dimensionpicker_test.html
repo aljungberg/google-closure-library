@@ -3,7 +3,7 @@
 <!--
 Copyright 2008 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!--
@@ -79,6 +79,34 @@ See the COPYING file for details.
       size = picker.getValue();
       assertEquals('Should have 3 columns highlighted', 3, size.width);
       assertEquals('Should have 4 rows highlighted', 4, size.height);
+    }
+
+    function testSizeShown() {
+      picker.render(render);
+
+      var size = picker.getSize();
+      assertEquals('Should have 5 columns visible', 5, size.width);
+      assertEquals('Should have 5 rows visible', 5, size.height);
+
+      picker.setValue(4, 4);
+      size = picker.getSize();
+      assertEquals('Should have 5 columns visible', 5, size.width);
+      assertEquals('Should have 5 rows visible', 5, size.height);
+
+      picker.setValue(12, 13);
+      size = picker.getSize();
+      assertEquals('Should have 13 columns visible', 13, size.width);
+      assertEquals('Should have 14 rows visible', 14, size.height);
+
+      picker.setValue(20, 20);
+      size = picker.getSize();
+      assertEquals('Should have 20 columns visible', 20, size.width);
+      assertEquals('Should have 20 rows visible', 20, size.height);
+
+      picker.setValue(2, 3);
+      size = picker.getSize();
+      assertEquals('Should have 5 columns visible', 5, size.width);
+      assertEquals('Should have 5 rows visible', 5, size.height);
     }
 
     function testHandleMove() {

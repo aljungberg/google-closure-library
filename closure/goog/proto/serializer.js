@@ -14,11 +14,11 @@
 
 /**
  * @fileoverview Protocol buffer serializer.
- *
+ * @author arv@google.com (Erik Arvidsson)
  */
 
 
-// TODO(user): Serialize booleans as 0 and 1
+// TODO(arv): Serialize booleans as 0 and 1
 
 
 goog.provide('goog.proto.Serializer');
@@ -26,6 +26,7 @@ goog.provide('goog.proto.Serializer');
 
 goog.require('goog.json.Serializer');
 goog.require('goog.string');
+
 
 
 /**

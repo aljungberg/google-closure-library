@@ -15,7 +15,7 @@
 /**
  * @fileoverview Renderer for {@link goog.ui.Palette}s.
  *
- *
+ * @author attila@google.com (Attila Bodis)
  */
 
 goog.provide('goog.ui.PaletteRenderer');
@@ -28,6 +28,7 @@ goog.require('goog.dom.classes');
 goog.require('goog.style');
 goog.require('goog.ui.ControlRenderer');
 goog.require('goog.userAgent');
+
 
 
 /**

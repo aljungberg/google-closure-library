@@ -15,8 +15,8 @@
 /**
  * @fileoverview Plain text spell checker implementation.
  *
- *
- *
+ * @author eae@google.com (Emil A Eklund)
+ * @author sergeys@google.com (Sergey Solyanik)
  * @see ../demos/plaintextspellchecker.html
  */
 
@@ -35,6 +35,7 @@ goog.require('goog.ui.AbstractSpellChecker');
 goog.require('goog.ui.AbstractSpellChecker.AsyncResult');
 goog.require('goog.ui.Component.EventType');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -75,12 +76,14 @@ goog.ui.PlainTextSpellChecker = function(handler, opt_domHelper) {
 };
 goog.inherits(goog.ui.PlainTextSpellChecker, goog.ui.AbstractSpellChecker);
 
+
 /**
  * Class name for invalid words.
  * @type {string}
  */
 goog.ui.PlainTextSpellChecker.prototype.invalidWordClassName =
     goog.getCssName('goog-spellcheck-invalidword');
+
 
 /**
  * Class name for corrected words.
@@ -89,6 +92,7 @@ goog.ui.PlainTextSpellChecker.prototype.invalidWordClassName =
 goog.ui.PlainTextSpellChecker.prototype.correctedWordClassName =
   goog.getCssName('goog-spellcheck-correctedword');
 
+
 /**
  * Class name for correction pane.
  * @type {string}
@@ -96,12 +100,14 @@ goog.ui.PlainTextSpellChecker.prototype.correctedWordClassName =
 goog.ui.PlainTextSpellChecker.prototype.correctionPaneClassName =
     goog.getCssName('goog-spellcheck-correctionpane');
 
+
 /**
  * Number of words to scan to precharge the dictionary.
  * @type {number}
  * @private
  */
 goog.ui.PlainTextSpellChecker.prototype.dictionaryPreScanSize_ = 1000;
+
 
 /**
  * Size of window. Used to check if a resize operation actually changed the size
@@ -111,6 +117,7 @@ goog.ui.PlainTextSpellChecker.prototype.dictionaryPreScanSize_ = 1000;
  */
 goog.ui.PlainTextSpellChecker.prototype.winSize_;
 
+
 /**
  * Numeric Id of the element that has focus. 0 when not set.
  *
@@ -119,6 +126,7 @@ goog.ui.PlainTextSpellChecker.prototype.winSize_;
  */
 goog.ui.AbstractSpellChecker.prototype.focusedElementId_ = 0;
 
+
 /**
  * Event handler for listening to events without leaking.
  * @type {goog.events.EventHandler|undefined}
@@ -126,12 +134,14 @@ goog.ui.AbstractSpellChecker.prototype.focusedElementId_ = 0;
  */
 goog.ui.PlainTextSpellChecker.prototype.eventHandler_;
 
+
 /**
  * The object handling keyboard events.
  * @type {goog.events.KeyHandler|undefined}
  * @private
  */
 goog.ui.PlainTextSpellChecker.prototype.keyHandler_;
+
 
 /**
  * Creates the initial DOM representation for the component.
@@ -155,7 +165,7 @@ goog.ui.PlainTextSpellChecker.prototype.enterDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.PlainTextSpellChecker.prototype.exitDocument = function() {
   goog.ui.PlainTextSpellChecker.superClass_.exitDocument.call(this);
 
@@ -178,7 +188,7 @@ goog.ui.PlainTextSpellChecker.prototype.exitDocument = function() {
  */
 goog.ui.PlainTextSpellChecker.prototype.initSuggestionsMenu = function() {
   goog.ui.PlainTextSpellChecker.superClass_.initSuggestionsMenu.call(this);
-  this.eventHandler_.listen(/** @type {goog.ui.PopupMenu} */ (this.menu_),
+  this.eventHandler_.listen(/** @type {goog.ui.PopupMenu} */ (this.getMenu()),
       goog.ui.Component.EventType.BLUR, this.onCorrectionBlur_);
 };
 
@@ -405,7 +415,7 @@ goog.ui.PlainTextSpellChecker.prototype.processRange = function(node, text) {
  * Hides correction UI.
  */
 goog.ui.PlainTextSpellChecker.prototype.resume = function() {
-  var wasVisible = this.isVisible_;
+  var wasVisible = this.isVisible();
 
   goog.ui.PlainTextSpellChecker.superClass_.resume.call(this);
 
@@ -514,7 +524,7 @@ goog.ui.PlainTextSpellChecker.prototype.positionOverlay_ = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.PlainTextSpellChecker.prototype.disposeInternal = function() {
   this.getDomHelper().removeNode(this.overlay_);
   delete this.overlay_;
@@ -596,7 +606,7 @@ goog.ui.PlainTextSpellChecker.prototype.handleOverlayKeyEvent = function(e) {
 goog.ui.PlainTextSpellChecker.prototype.navigate_ = function(direction) {
   var handled = false;
   var previous = direction == goog.ui.AbstractSpellChecker.Direction.PREVIOUS;
-  var lastId = goog.ui.AbstractSpellChecker.nextId_;
+  var lastId = goog.ui.AbstractSpellChecker.getNextId();
   var focusedId = this.focusedElementId_;
 
   var el;
@@ -630,7 +640,7 @@ goog.ui.PlainTextSpellChecker.prototype.onCorrectionAction = function(event) {
 
   // In case of editWord base class has already set the focus (on the input),
   // otherwise set the focus back on the word.
-  if (event.target != this.menuEdit_) {
+  if (event.target != this.getMenuEdit()) {
     this.reFocus_();
   }
 };

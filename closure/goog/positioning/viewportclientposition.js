@@ -16,7 +16,7 @@
  * @fileoverview Client viewport positioning class.
  *
  * @author robbyw@google.com (Robert Walker)
- *
+ * @author eae@google.com (Emil A Eklund)
  */
 
 goog.provide('goog.positioning.ViewportClientPosition');
@@ -43,6 +43,24 @@ goog.positioning.ViewportClientPosition = function(arg1, opt_arg2) {
 };
 goog.inherits(goog.positioning.ViewportClientPosition,
               goog.positioning.ClientPosition);
+
+
+/**
+ * The last-resort overflow strategy, if the popup fails to fit.
+ * @type {number}
+ * @private
+ */
+goog.positioning.ViewportClientPosition.prototype.lastResortOverflow_ = 0;
+
+
+/**
+ * Set the last-resort overflow strategy, if the popup fails to fit.
+ * @param {number} overflow A bitmask of goog.positioning.Overflow strategies.
+ */
+goog.positioning.ViewportClientPosition.prototype.setLastResortOverflow =
+    function(overflow) {
+  this.lastResortOverflow_ = overflow;
+};
 
 
 /**
@@ -97,6 +115,6 @@ goog.positioning.ViewportClientPosition.prototype.reposition = function(
   // If that failed, the viewport is simply too small to contain the popup.
   // Revert to the original position.
   goog.positioning.positionAtCoordinate(
-      clientPos, element, popupCorner, opt_margin, viewport, undefined,
-      opt_preferredSize);
+      clientPos, element, popupCorner, opt_margin, viewport,
+      this.lastResortOverflow_, opt_preferredSize);
 };

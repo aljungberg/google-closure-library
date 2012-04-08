@@ -16,7 +16,6 @@
  * @fileoverview Contains application code for the XPC demo.
  * This script is used in both the container page and the iframe.
  *
- *
  */
 
 goog.require('goog.Uri');
@@ -26,6 +25,13 @@ goog.require('goog.events');
 goog.require('goog.events.EventType');
 goog.require('goog.json');
 goog.require('goog.net.xpc.CrossPageChannel');
+
+
+/**
+ * Namespace for the demo. We don't use goog.provide here because it's not a
+ * real module (cannot be required).
+ */
+var xpcdemo = {};
 
 
 /**
@@ -42,13 +48,6 @@ goog.global.initOuter = function() {
 goog.global.initInner = function() {
   goog.events.listen(window, 'load', function() { xpcdemo.initInner(); });
 };
-
-
-/**
- * Namespace for the demo. We don't use goog.provide here because it's not a
- * real module (cannot be required).
- */
-xpcdemo = {};
 
 
 /**

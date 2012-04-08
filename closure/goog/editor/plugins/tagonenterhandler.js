@@ -16,9 +16,6 @@
  * @fileoverview TrogEdit plugin to handle enter keys by inserting the
  * specified block level tag.
  *
- *
- *
- * @author robbyw@google.com (Robby Walker)
  */
 
 goog.provide('goog.editor.plugins.TagOnEnterHandler');
@@ -38,6 +35,7 @@ goog.require('goog.style');
 goog.require('goog.userAgent');
 
 
+
 /**
  * Plugin to handle enter keys. This subclass normalizes all browsers to use
  * the given block tag on enter.
@@ -46,12 +44,7 @@ goog.require('goog.userAgent');
  * @extends {goog.editor.plugins.EnterHandler}
  */
 goog.editor.plugins.TagOnEnterHandler = function(tag) {
-  /**
-   * The type of block level tag to add on enter.
-   * @type {goog.dom.TagName}
-   * @private
-   */
-  this.tag_ = tag;
+  this.tag = tag;
 
   goog.editor.plugins.EnterHandler.call(this);
 };
@@ -59,18 +52,18 @@ goog.inherits(goog.editor.plugins.TagOnEnterHandler,
     goog.editor.plugins.EnterHandler);
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.getTrogClassId = function() {
   return 'TagOnEnterHandler';
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.getNonCollapsingBlankHtml =
     function() {
-  if (this.tag_ == goog.dom.TagName.P) {
+  if (this.tag == goog.dom.TagName.P) {
     return '<p>&nbsp;</p>';
-  } else if (this.tag_ == goog.dom.TagName.DIV) {
+  } else if (this.tag == goog.dom.TagName.DIV) {
     return '<div><br></div>';
   }
   return '<br>';
@@ -86,21 +79,21 @@ goog.editor.plugins.TagOnEnterHandler.prototype.activeOnUneditableFields =
     goog.functions.TRUE;
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.isSupportedCommand = function(
     command) {
   return command == goog.editor.Command.DEFAULT_TAG;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.queryCommandValue = function(
     command) {
-  return command == goog.editor.Command.DEFAULT_TAG ? this.tag_ : null;
+  return command == goog.editor.Command.DEFAULT_TAG ? this.tag : null;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.handleBackspaceInternal =
     function(e, range) {
   goog.editor.plugins.TagOnEnterHandler.superClass_.handleBackspaceInternal.
@@ -112,17 +105,17 @@ goog.editor.plugins.TagOnEnterHandler.prototype.handleBackspaceInternal =
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.processParagraphTagsInternal =
     function(e, split) {
   if ((goog.userAgent.OPERA || goog.userAgent.IE) &&
-      this.tag_ != goog.dom.TagName.P) {
-    this.ensureBlockIeOpera(this.tag_);
+      this.tag != goog.dom.TagName.P) {
+    this.ensureBlockIeOpera(this.tag);
   }
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.handleDeleteGecko = function(
     e) {
   var range = this.fieldObject.getRange();
@@ -146,7 +139,7 @@ goog.editor.plugins.TagOnEnterHandler.prototype.handleDeleteGecko = function(
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.handleKeyUpInternal = function(
     e) {
   if (goog.userAgent.GECKO) {
@@ -157,7 +150,7 @@ goog.editor.plugins.TagOnEnterHandler.prototype.handleKeyUpInternal = function(
     }
   } else if ((goog.userAgent.IE || goog.userAgent.OPERA) &&
              e.keyCode == goog.events.KeyCodes.ENTER) {
-    this.ensureBlockIeOpera(this.tag_, true);
+    this.ensureBlockIeOpera(this.tag, true);
   }
   // Safari uses DIVs by default.
 };
@@ -219,16 +212,16 @@ goog.editor.plugins.TagOnEnterHandler.prototype.ensureNodeIsWrappedW3c_ =
       return container == child.parentNode; };
     var nodeToWrap = goog.dom.getAncestor(node, isChildOfFn, true);
     container = goog.editor.plugins.TagOnEnterHandler.wrapInContainerW3c_(
-        this.tag_, {node: nodeToWrap, offset: 0}, container);
+        this.tag, {node: nodeToWrap, offset: 0}, container);
   }
   return container;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.handleEnterWebkitInternal =
     function(e) {
-  if (this.tag_ == goog.dom.TagName.DIV) {
+  if (this.tag == goog.dom.TagName.DIV) {
     var range = this.fieldObject.getRange();
     var container =
         goog.editor.style.getContainer(range.getContainerElement());
@@ -240,7 +233,7 @@ goog.editor.plugins.TagOnEnterHandler.prototype.handleEnterWebkitInternal =
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.TagOnEnterHandler.prototype.
     handleEnterAtCursorGeckoInternal = function(e, wasCollapsed, range) {
   // We use this because there are a few cases where FF default
@@ -272,6 +265,10 @@ goog.editor.plugins.TagOnEnterHandler.prototype.
   if (goog.editor.plugins.EnterHandler.isBrElem(elementAfterCursor)) {
     // The first element in the new line is a line with just a BR and maybe some
     // whitespace.
+    // Calling normalize() is needed because there might be empty text nodes
+    // before BR and empty text nodes cause the cursor position bug in Firefox.
+    // See http://b/5220858
+    elementAfterCursor.normalize();
     var br = elementAfterCursor.getElementsByTagName(goog.dom.TagName.BR)[0];
     if (br.previousSibling &&
         br.previousSibling.nodeType == goog.dom.NodeType.TEXT) {
@@ -318,7 +315,7 @@ goog.editor.plugins.TagOnEnterHandler.prototype.breakOutOfEmptyListItemGecko_ =
 
   // TODO(robbyw): Should we apply the list or list item styles to the new node?
   var newNode = goog.dom.getDomHelper(li).createElement(
-      inSubList ? goog.dom.TagName.LI : this.tag_);
+      inSubList ? goog.dom.TagName.LI : this.tag);
 
   if (!li.previousSibling) {
     goog.dom.insertSiblingBefore(newNode, listNode);
@@ -555,8 +552,9 @@ goog.editor.plugins.TagOnEnterHandler.prototype.scrollCursorIntoViewGecko_ =
   // element to be in view.
   var bottomOfNode = elementY + element.offsetHeight;
 
+  var dom = this.getFieldDomHelper();
   var win = this.getFieldDomHelper().getWindow();
-  var scrollY = goog.dom.getPageScroll(win).y;
+  var scrollY = dom.getDocumentScroll().y;
   var viewportHeight = goog.dom.getViewportSize(win).height;
 
   // If the botom of the element is outside the viewport, move it into view
@@ -700,6 +698,7 @@ goog.editor.plugins.TagOnEnterHandler.joinTextNodes_ = function(node,
   return node;
 };
 
+
 /**
  * Replaces leading or trailing spaces of a text node to a single Nbsp.
  * @param {Node} textNode The text node to search and replace white spaces.
@@ -712,7 +711,7 @@ goog.editor.plugins.TagOnEnterHandler.joinTextNodes_ = function(node,
  */
 goog.editor.plugins.TagOnEnterHandler.replaceWhiteSpaceWithNbsp_ = function(
     textNode, fromStart, isLeaveEmpty) {
-  var regExp = fromStart ? / ^[\t\r\n]+/ : /[ \t\r\n]+$/;
+  var regExp = fromStart ? /^[ \t\r\n]+/ : /[ \t\r\n]+$/;
   textNode.nodeValue = textNode.nodeValue.replace(regExp,
                                                   goog.string.Unicode.NBSP);
 

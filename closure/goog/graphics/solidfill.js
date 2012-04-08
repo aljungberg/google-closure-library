@@ -15,7 +15,7 @@
 
 /**
  * @fileoverview Represents a solid color fill goog.graphics.
- *
+ * @author arv@google.com (Erik Arvidsson)
  */
 
 
@@ -23,6 +23,7 @@ goog.provide('goog.graphics.SolidFill');
 
 
 goog.require('goog.graphics.Fill');
+
 
 
 /**

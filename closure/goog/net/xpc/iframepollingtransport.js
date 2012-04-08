@@ -14,7 +14,6 @@
 
 /**
  * @fileoverview Contains the iframe polling transport.
- *
  */
 
 
@@ -25,8 +24,10 @@ goog.provide('goog.net.xpc.IframePollingTransport.Sender');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.net.xpc');
+goog.require('goog.net.xpc.CrossPageChannelRole');
 goog.require('goog.net.xpc.Transport');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -39,10 +40,13 @@ goog.require('goog.userAgent');
  *
  * @param {goog.net.xpc.CrossPageChannel} channel The channel this
  *     transport belongs to.
+ * @param {goog.dom.DomHelper=} opt_domHelper The dom helper to use for finding
+ *     the correct window.
  * @constructor
  * @extends {goog.net.xpc.Transport}
  */
-goog.net.xpc.IframePollingTransport = function(channel) {
+goog.net.xpc.IframePollingTransport = function(channel, opt_domHelper) {
+  goog.base(this, opt_domHelper);
 
   /**
    * The channel this transport belongs to.
@@ -141,6 +145,14 @@ goog.net.xpc.IframePollingTransport.prototype.getAckFrameName_ = function() {
  * Connects this transport.
  */
 goog.net.xpc.IframePollingTransport.prototype.connect = function() {
+  if (this.isDisposed()) {
+    // We should stop polling for connecting if the transport has been
+    // disposed (i.e., the channel has been closed), otherwise
+    // outerPeerReconnect_() may throw exceptions when it refers
+    // channel_.peerWindowObject_ which is reset to null by channel_.close().
+    return;
+  }
+
   goog.net.xpc.logger.fine('transport connect called');
   if (!this.initialized_) {
     goog.net.xpc.logger.fine('initializing...');
@@ -161,11 +173,11 @@ goog.net.xpc.IframePollingTransport.prototype.constructSenderFrames_ =
     function() {
   var name = this.getMsgFrameName_();
   this.msgIframeElm_ = this.constructSenderFrame_(name);
-  this.msgWinObj_ = window.frames[name];
+  this.msgWinObj_ = this.getWindow().frames[name];
 
   name = this.getAckFrameName_();
   this.ackIframeElm_ = this.constructSenderFrame_(name);
-  this.ackWinObj_ = window.frames[name];
+  this.ackWinObj_ = this.getWindow().frames[name];
 };
 
 
@@ -184,7 +196,7 @@ goog.net.xpc.IframePollingTransport.prototype.constructSenderFrame_ =
   s.top = '-10px'; s.left = '10px'; s.width = '1px'; s.height = '1px';
   ifr.id = ifr.name = id;
   ifr.src = this.sendUri_ + '#INITIAL';
-  document.body.appendChild(ifr);
+  this.getWindow().document.body.appendChild(ifr);
   return ifr;
 };
 
@@ -284,7 +296,7 @@ goog.net.xpc.IframePollingTransport.prototype.checkForeignFramesReady_ =
         this.isRcvFrameReady_(this.getAckFrameName_()))) {
     goog.net.xpc.logger.finest('foreign frames not (yet) present');
 
-    if (this.channel_.getRole() == goog.net.xpc.CrossPageChannel.Role.INNER &&
+    if (this.channel_.getRole() == goog.net.xpc.CrossPageChannelRole.INNER &&
         !this.reconnectFrame_) {
       // The inner peer should always have its receiving frames ready.
       // It is safe to assume the channel name has fallen out of sync
@@ -292,7 +304,7 @@ goog.net.xpc.IframePollingTransport.prototype.checkForeignFramesReady_ =
       // which the outer peer will find, and use to resync the channel names.
       this.innerPeerReconnect_();
     } else if (this.channel_.getRole() ==
-               goog.net.xpc.CrossPageChannel.Role.OUTER) {
+               goog.net.xpc.CrossPageChannelRole.OUTER) {
       // The inner peer is either not loaded yet, or the receiving
       // frames are simply missing. Since we cannot discern the two cases, we
       // should scan for a reconnect message from the inner peer.
@@ -300,7 +312,7 @@ goog.net.xpc.IframePollingTransport.prototype.checkForeignFramesReady_ =
     }
 
     // start a timer to check again
-    window.setTimeout(goog.bind(this.connect, this), 100);
+    this.getWindow().setTimeout(goog.bind(this.connect, this), 100);
   } else {
     goog.net.xpc.logger.fine('foreign frames present');
 
@@ -359,7 +371,7 @@ goog.net.xpc.IframePollingTransport.prototype.checkLocalFramesPresent_ =
       this.checkLocalFramesPresentCb_ = goog.bind(
           this.checkLocalFramesPresent_, this);
     }
-    window.setTimeout(this.checkLocalFramesPresentCb_, 100);
+    this.getWindow().setTimeout(this.checkLocalFramesPresentCb_, 100);
     goog.net.xpc.logger.fine('local frames not (yet) present');
   } else {
     // Create senders.
@@ -370,7 +382,7 @@ goog.net.xpc.IframePollingTransport.prototype.checkLocalFramesPresent_ =
 
     goog.net.xpc.logger.fine('local frames ready');
 
-    window.setTimeout(goog.bind(function() {
+    this.getWindow().setTimeout(goog.bind(function() {
       this.msgSender_.send(goog.net.xpc.SETUP);
       this.sentConnectionSetup_ = true;
       this.waitForAck_ = true;
@@ -586,11 +598,9 @@ goog.net.xpc.IframePollingTransport.prototype.send =
 };
 
 
-/**
- * Disposes of the transport.
- */
+/** @override */
 goog.net.xpc.IframePollingTransport.prototype.disposeInternal = function() {
-  goog.net.xpc.IframePollingTransport.superClass_.disposeInternal.call(this);
+  goog.base(this, 'disposeInternal');
 
   var receivers = goog.net.xpc.IframePollingTransport.receivers_;
   goog.array.remove(receivers, this.msgReceiver_);
@@ -770,7 +780,6 @@ goog.net.xpc.IframePollingTransport.Sender.prototype.send = function(payload) {
   // where we need to capture responses quickly.
   goog.net.xpc.IframePollingTransport.startRcvTimer_();
 };
-
 
 
 

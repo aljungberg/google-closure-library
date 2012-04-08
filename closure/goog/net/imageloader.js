@@ -16,8 +16,8 @@
  * @fileoverview Image loader utility class.  Useful when an application needs
  * to preload multiple images, for example so they can be sized.
  *
- *
- *
+ * @author attila@google.com (Attila Bodis)
+ * @author zachlloyd@google.com (Zachary Lloyd)
  */
 
 goog.provide('goog.net.ImageLoader');
@@ -29,6 +29,8 @@ goog.require('goog.events.EventType');
 goog.require('goog.net.EventType');
 goog.require('goog.object');
 goog.require('goog.userAgent');
+
+
 
 /**
  * Image loader utility class.  Raises a {@link goog.events.EventType.LOAD}
@@ -122,6 +124,13 @@ goog.net.ImageLoader.prototype.start = function() {
  * @param {string} id The unique ID of the image to load.
  */
 goog.net.ImageLoader.prototype.loadImage_ = function(src, id) {
+  if (this.isDisposed()) {
+    // When loading an image in IE7 (and maybe IE8), the error handler
+    // may fire before we yield JS control. If the error handler
+    // dispose the ImageLoader, this method will throw exception.
+    return;
+  }
+
   var image;
   if (this.parent_) {
     var dom = goog.dom.getDomHelper(this.parent_);
@@ -161,7 +170,7 @@ goog.net.ImageLoader.prototype.onNetworkEvent_ = function(evt) {
   }
 
   if (evt.type == goog.net.EventType.READY_STATE_CHANGE) {
-    // This implies that the user agent is IE; see loadImage()_.
+    // This implies that the user agent is IE; see loadImage_().
     // Noe that this block is used to check whether the image is ready to
     // dispatch the COMPLETE event.
     if (image.readyState == goog.net.EventType.COMPLETE) {
@@ -199,8 +208,14 @@ goog.net.ImageLoader.prototype.onNetworkEvent_ = function(evt) {
     }
   }
 
-  // Redispatch the event on behalf of the image.
+  // Redispatch the event on behalf of the image. Note that the external
+  // listener may dispose this instance.
   this.dispatchEvent({type: evt.type, target: image});
+
+  if (this.isDisposed()) {
+    // If instance was disposed by listener, exit this function.
+    return;
+  }
 
   // Remove the image from the map.
   goog.object.remove(this.images_, image.id);
@@ -216,9 +231,7 @@ goog.net.ImageLoader.prototype.onNetworkEvent_ = function(evt) {
 };
 
 
-/**
- * Disposes of the image loader.
- */
+/** @override */
 goog.net.ImageLoader.prototype.disposeInternal = function() {
   if (this.images_) {
     delete this.images_;

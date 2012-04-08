@@ -18,14 +18,13 @@
  * the basic structure for creating, updating and removing the store, as well
  * as versioning. It also provides ways to interconnect stores.
  *
- *
- *
  */
 
 goog.provide('goog.gears.BaseStore');
 goog.provide('goog.gears.BaseStore.SchemaType');
 
 goog.require('goog.Disposable');
+
 
 
 /**
@@ -497,18 +496,15 @@ goog.gears.BaseStore.prototype.hasInSchema_ = function(type, name) {
 };
 
 
-/**
- * Disposes of the object.
- */
+/** @override */
 goog.gears.BaseStore.prototype.disposeInternal = function() {
   goog.gears.BaseStore.superClass_.disposeInternal.call(this);
   this.database_ = null;
 };
 
 
-
 /**
- * HACK(user): The JSCompiler check for undefined properties sees that these
+ * HACK(arv): The JSCompiler check for undefined properties sees that these
  * fields are never set and raises warnings.
  * @type {Array.<Object>}
  * @private

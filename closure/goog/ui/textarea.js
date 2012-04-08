@@ -19,7 +19,6 @@
  * modifications to support native (when available) textarea resizing and
  * minHeight and maxHeight enforcement.
  *
- *
  * @see ../demos/textarea.html
  */
 
@@ -33,6 +32,7 @@ goog.require('goog.ui.Control');
 goog.require('goog.ui.TextareaRenderer');
 goog.require('goog.userAgent');
 goog.require('goog.userAgent.product');
+
 
 
 /**
@@ -100,7 +100,6 @@ goog.ui.Textarea.prototype.maxHeight_ = 0;
  * @private
  */
 goog.ui.Textarea.prototype.minHeight_ = 0;
-
 
 
 /**
@@ -258,14 +257,14 @@ goog.ui.Textarea.prototype.getValue = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.Textarea.prototype.setContent = function(content) {
   goog.ui.Textarea.superClass_.setContent.call(this, content);
   this.resize();
 };
 
 
-/** @inheritDoc **/
+/** @override **/
 goog.ui.Textarea.prototype.setEnabled = function(enable) {
   goog.ui.Textarea.superClass_.setEnabled.call(this, enable);
   this.getElement().disabled = !enable;
@@ -282,7 +281,7 @@ goog.ui.Textarea.prototype.resize = function() {
 };
 
 
-/** @inheritDoc **/
+/** @override **/
 goog.ui.Textarea.prototype.enterDocument = function() {
   var textarea = this.getElement();
 

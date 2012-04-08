@@ -15,7 +15,7 @@
 /**
  * @fileoverview Renderer for {@link goog.ui.MenuItem}s.
  *
- *
+ * @author attila@google.com (Attila Bodis)
  */
 
 goog.provide('goog.ui.MenuItemRenderer');
@@ -27,6 +27,7 @@ goog.require('goog.dom.classes');
 goog.require('goog.ui.Component.State');
 goog.require('goog.ui.ControlContent');
 goog.require('goog.ui.ControlRenderer');
+
 
 
 /**
@@ -129,7 +130,7 @@ goog.ui.MenuItemRenderer.prototype.createDom = function(item) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.MenuItemRenderer.prototype.getContentElement = function(element) {
   return /** @type {Element} */ (element && element.firstChild);
 };
@@ -156,6 +157,7 @@ goog.ui.MenuItemRenderer.prototype.decorate = function(item, element) {
   return goog.ui.MenuItemRenderer.superClass_.decorate.call(this, item,
       element);
 };
+
 
 /**
  * Takes a menu item's root element, and sets its content to the given text
@@ -346,7 +348,7 @@ goog.ui.MenuItemRenderer.prototype.getStateFromClass = function(className) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.MenuItemRenderer.prototype.getCssClass = function() {
   return goog.ui.MenuItemRenderer.CSS_CLASS;
 };

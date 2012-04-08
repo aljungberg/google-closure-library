@@ -21,7 +21,6 @@
  * Response can have unexecutable starting/ending text to prevent inclusion
  * using <script src="...">
  *
- *
  */
 
 
@@ -35,6 +34,8 @@ goog.require('goog.ds.logger');
 goog.require('goog.events');
 goog.require('goog.net.EventType');
 goog.require('goog.net.XhrIo');
+
+
 
 /**
  * Similar to JsonDataSource, with using XMLHttpRequest for transport
@@ -170,7 +171,7 @@ goog.ds.JsXmlHttpDataSource.prototype.completed_ = function(e) {
     // Eval result
     /** @preserveTry */
     try {
-      var jsonObj = eval('[' + text + '][0]');
+      var jsonObj = /** @type {Object} */ (eval('[' + text + '][0]'));
       this.extendWith_(jsonObj);
       this.loadState_ = goog.ds.LoadState.LOADED;
     }

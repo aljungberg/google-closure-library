@@ -60,7 +60,6 @@
  * </pre>
  *
  *
- *
  * @supported IE6, FF2+, Safari. Requires flash to actually work.
  *
  * TODO(user): test on other browsers
@@ -79,6 +78,7 @@ goog.require('goog.ui.media.MediaModel');
 goog.require('goog.ui.media.MediaModel.Player');
 goog.require('goog.ui.media.MediaModel.Thumbnail');
 goog.require('goog.ui.media.MediaRenderer');
+
 
 
 /**
@@ -126,6 +126,7 @@ goog.addSingletonGetter(goog.ui.media.Youtube);
  * @param {goog.dom.DomHelper=} opt_domHelper Optional DOM helper, used for
  *     document interaction.
  * @return {goog.ui.media.Media} A Control binded to the youtube renderer.
+ * @suppress {visibility} Calling protected control.setStateInternal().
  */
 goog.ui.media.Youtube.newControl = function(youtubeModel, opt_domHelper) {
   var control = new goog.ui.media.Media(
@@ -195,6 +196,7 @@ goog.ui.media.Youtube.prototype.getCssClass = function() {
 };
 
 
+
 /**
  * The {@code goog.ui.media.Youtube} media data model. It stores a required
  * {@code videoId} field, sets the youtube URL, and allows a few optional
@@ -233,12 +235,40 @@ goog.inherits(goog.ui.media.YoutubeModel, goog.ui.media.MediaModel);
 
 /**
  * A youtube regular expression matcher. It matches the VIDEOID of URLs like
- * http://www.youtube.com/watch?v=VIDEOID.
+ * http://www.youtube.com/watch?v=VIDEOID. Based on:
+ * googledata/contentonebox/opencob/specs/common/YTPublicExtractorCard.xml
  * @type {RegExp}
  * @private
+ * @const
  */
-goog.ui.media.YoutubeModel.matcher_ =
-    /https?:\/\/(?:[a-zA_Z]{2,3}.)?(?:youtube\.com\/watch\?)((?:[\w\d\-\_\=]+&amp;(?:amp;)?)*v(?:&lt;[A-Z]+&gt;)?=([0-9a-zA-Z\-\_]+))/i;
+// Be careful about the placement of the dashes in the character classes. Eg,
+// use "[\\w=-]" instead of "[\\w-=]" if you mean to include the dash as a
+// character and not create a character range like "[a-f]".
+goog.ui.media.YoutubeModel.MATCHER_ = new RegExp(
+    // Lead in.
+    'http://(?:[a-zA-Z]{2,3}\\.)?' +
+    // Watch URL prefix.  This should handle new URLs of the form:
+    // http://www.youtube.com/watch#!v=jqxENMKaeCU&feature=related
+    // where the parameters appear after "#!" instead of "?".
+    '(?:youtube\\.com/watch)' +
+    // Get the video id:
+    // The video ID is a parameter v=[videoid] either right after the "?"
+    // or after some other parameters.
+    '(?:\\?(?:[\\w=-]+&(?:amp;)?)*v=([\\w-]+)' +
+    '(?:&(?:amp;)?[\\w=-]+)*)?' +
+    // Get any extra arguments in the URL's hash part.
+    '(?:#[!]?(?:' +
+    // Video ID from the v=[videoid] parameter, optionally surrounded by other
+    // & separated parameters.
+    '(?:(?:[\\w=-]+&(?:amp;)?)*(?:v=([\\w-]+))' +
+    '(?:&(?:amp;)?[\\w=-]+)*)' +
+    '|' +
+    // Continue supporting "?" for the video ID
+    // and "#" for other hash parameters.
+    '(?:[\\w=&-]+)' +
+    '))?' +
+    // Should terminate with a non-word, non-dash (-) character.
+    '[^\\w-]?', 'i');
 
 
 /**
@@ -257,10 +287,11 @@ goog.ui.media.YoutubeModel.matcher_ =
 goog.ui.media.YoutubeModel.newInstance = function(youtubeUrl,
                                                   opt_caption,
                                                   opt_description) {
-  var extract = goog.ui.media.YoutubeModel.matcher_.exec(youtubeUrl);
+  var extract = goog.ui.media.YoutubeModel.MATCHER_.exec(youtubeUrl);
   if (extract) {
+    var videoId = extract[1] || extract[2];
     return new goog.ui.media.YoutubeModel(
-        extract[2], opt_caption, opt_description);
+        videoId, opt_caption, opt_description);
   }
 
   throw Error('failed to parse video id from youtube url: ' + youtubeUrl);

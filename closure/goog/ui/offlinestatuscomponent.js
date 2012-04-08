@@ -16,7 +16,6 @@
  * @fileoverview A component that displays the offline status of an app.
  * Currently, it is used to show an icon with a tootip for the status.
  *
- *
  * @see ../demos/offline.html
  */
 
@@ -31,6 +30,7 @@ goog.require('goog.positioning.AnchoredPosition');
 goog.require('goog.positioning.Corner');
 goog.require('goog.positioning.Overflow');
 goog.require('goog.ui.Component');
+goog.require('goog.ui.OfflineStatusCard.EventType');
 goog.require('goog.ui.Popup');
 
 
@@ -185,7 +185,6 @@ goog.ui.OfflineStatusComponent.prototype.getStatus = function() {
 };
 
 
-
 /**
  * Sets the status of the offline component of the app.
  * @param {goog.gears.StatusType} status The offline
@@ -289,7 +288,7 @@ goog.ui.OfflineStatusComponent.prototype.createDom = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.OfflineStatusComponent.prototype.enterDocument = function() {
   goog.ui.OfflineStatusComponent.superClass_.enterDocument.call(this);
 
@@ -415,8 +414,8 @@ goog.ui.OfflineStatusComponent.prototype.getStatusClassName_ = function(
     case goog.gears.StatusType.ERROR:
       className = goog.ui.OfflineStatusComponent.StatusClassNames.ERROR;
       break;
-  default:
-    break;
+    default:
+      break;
   }
   return className;
 };
@@ -470,8 +469,11 @@ goog.ui.OfflineStatusComponent.prototype.performEnableAction = function() {
 
 /**
  * Performs the action to show the offline status.
+ * @param {goog.events.Event=} opt_evt Event.
+ * @param {Element=} opt_element Optional element to anchor the card against.
  */
-goog.ui.OfflineStatusComponent.prototype.performStatusAction = function() {
+goog.ui.OfflineStatusComponent.prototype.performStatusAction = function(opt_evt,
+    opt_element) {
   // Shows the offline status card.
   var card = this.card_;
   if (card) {
@@ -482,15 +484,10 @@ goog.ui.OfflineStatusComponent.prototype.performStatusAction = function() {
       this.insertCardElement(card);
       this.addChild(card);
       var popup = this.getPopupInternal();
+      var anchorEl = opt_element || this.getElement();
       var pos = new goog.positioning.AnchoredPosition(
-          this.getElement(), goog.positioning.Corner.BOTTOM_START);
-
-      // Override to pass in overflow
-      pos.reposition = function(element, popupCorner, opt_margin) {
-        goog.positioning.positionAtAnchor(this.element, this.corner, element,
-            popupCorner, null, opt_margin, goog.positioning.Overflow.ADJUST_X);
-      };
-
+          anchorEl, goog.positioning.Corner.BOTTOM_START,
+          goog.positioning.Overflow.ADJUST_X);
       popup.setPosition(pos);
       popup.setElement(card.getElement());
     }
@@ -515,14 +512,14 @@ goog.ui.OfflineStatusComponent.prototype.insertCardElement = function(card) {
  */
 goog.ui.OfflineStatusComponent.prototype.getPopupInternal = function() {
   if (!this.popup_) {
-     this.popup_ = new goog.ui.Popup();
-     this.popup_.setMargin(3, 0, 0, 0);
+    this.popup_ = new goog.ui.Popup();
+    this.popup_.setMargin(3, 0, 0, 0);
   }
   return this.popup_;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.OfflineStatusComponent.prototype.disposeInternal = function() {
   goog.ui.OfflineStatusComponent.superClass_.disposeInternal.call(this);
 

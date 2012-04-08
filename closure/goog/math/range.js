@@ -14,11 +14,11 @@
 
 /**
  * @fileoverview A utility class for representing a numeric range.
- *
  */
 
 
 goog.provide('goog.math.Range');
+
 
 
 /**
@@ -28,9 +28,6 @@ goog.provide('goog.math.Range');
  * @constructor
  */
 goog.math.Range = function(a, b) {
-  a = Number(a);
-  b = Number(b);
-
   /**
    * The lowest value in the range.
    * @type {number}
@@ -87,7 +84,7 @@ goog.math.Range.equals = function(a, b) {
  * of those ranges.
  * @param {goog.math.Range} a A Range.
  * @param {goog.math.Range} b A Range.
- * @return {goog.math.Range?} A new Range representing the intersection of two
+ * @return {goog.math.Range} A new Range representing the intersection of two
  *     ranges, or null if there is no intersection. Ranges are assumed to
  *     include their end points, and the intersection can be a point.
  */

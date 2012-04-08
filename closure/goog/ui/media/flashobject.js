@@ -38,8 +38,6 @@
  * subclasses goog.ui.media.FlashObject to provide all the goodness of
  * http://go/browserinterface.as
  *
- *
- *
  */
 
 goog.provide('goog.ui.media.FlashObject');
@@ -56,6 +54,7 @@ goog.require('goog.ui.Component');
 goog.require('goog.ui.Component.Error');
 goog.require('goog.userAgent');
 goog.require('goog.userAgent.flash');
+
 
 
 /**
@@ -140,6 +139,7 @@ goog.ui.media.FlashObject.Wmodes = {
   WINDOW: 'window'
 };
 
+
 /**
  * The different levels of allowScriptAccess.
  *
@@ -165,6 +165,7 @@ goog.ui.media.FlashObject.ScriptAccessLevel = {
    */
   NEVER: 'never'
 };
+
 
 /**
  * The component CSS namespace.
@@ -485,7 +486,7 @@ goog.ui.media.FlashObject.prototype.hasRequiredVersion = function() {
 /**
  * Writes the Flash embedding {@code HTMLObjectElement} to this components root
  * element and adds listeners for all events to handle them consistently.
- * @inheritDoc
+ * @override
  */
 goog.ui.media.FlashObject.prototype.enterDocument = function() {
   goog.ui.media.FlashObject.superClass_.enterDocument.call(this);
@@ -529,7 +530,7 @@ goog.ui.media.FlashObject.prototype.enterDocument = function() {
 /**
  * Creates the DOM structure.
  *
- * @inheritDoc
+ * @override
  */
 goog.ui.media.FlashObject.prototype.createDom = function() {
   if (this.hasRequiredVersion() &&
@@ -595,7 +596,7 @@ goog.ui.media.FlashObject.prototype.getFlashElement = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.media.FlashObject.prototype.disposeInternal = function() {
   goog.ui.media.FlashObject.superClass_.disposeInternal.call(this);
   this.flashVars_ = null;

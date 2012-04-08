@@ -49,7 +49,6 @@
  * </pre>
  *
  *
- *
  * @supported IE6, FF2+, Safari. Requires flash to actually work.
  *
  * TODO(user): test on other browsers
@@ -61,6 +60,7 @@ goog.require('goog.string');
 goog.require('goog.ui.media.FlashObject');
 goog.require('goog.ui.media.Media');
 goog.require('goog.ui.media.MediaRenderer');
+
 
 
 /**
@@ -208,7 +208,7 @@ goog.ui.media.Mp3.prototype.createDom = function(control) {
       goog.string.urlEncode(dataModel.getUrl()));
   var flash = new goog.ui.media.FlashObject(
       dataModel.getPlayer().getUrl(), control.getDomHelper());
-  flash.setFlashVars('playerMode', 'embedded');
+  flash.setFlashVar('playerMode', 'embedded');
   flash.render(div);
 
   return div;

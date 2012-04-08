@@ -3,13 +3,10 @@
 <!--
 Copyright 2006 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!--
-  Author: msamuel@google.com (Mike Samuel)
-  Author: pupius@google.com (Daniel Pupius)
-  Author: micapolos@google.com (Michal Pociecha-Los)
 -->
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -461,12 +458,16 @@ function testMakeUnique() {
 function testSetReadOnly() {
   var uri = new goog.Uri('http://www.google.com/setgmail');
   uri.setReadOnly(true);
-  try {
+  assertThrows(function() {
     uri.setParameterValue('cant', 'dothis')
-  } catch(e) {
-    return;
-  }
-  assertTrue(false);
+  });
+}
+
+function testSetReadOnlyChained() {
+  var uri = new goog.Uri('http://www.google.com/setgmail').setReadOnly(true);
+  assertThrows(function() {
+    uri.setParameterValue('cant', 'dothis');
+  });
 }
 
 function testQueryDataCount() {
@@ -502,6 +503,9 @@ function testQueryDataIsEmpty() {
 
   qd = new goog.Uri.QueryData('a=A&b=B&a=A2&b=B2&c=C');
   qd.clear();
+  assertTrue(qd.isEmpty());
+
+  qd = new goog.Uri.QueryData('');
   assertTrue(qd.isEmpty());
 }
 
@@ -605,12 +609,17 @@ function testQueryDataGetKeys() {
 function testQueryDataGetValues() {
   var qd = new goog.Uri.QueryData('a=A&b=B&a=A2&b=B2&c=C=extra');
 
-  assertEquals('AA2BB2C=extra', qd.getValues().join(''));
+  assertArrayEquals(['A', 'A2', 'B', 'B2', 'C=extra'], qd.getValues());
   qd.remove('a');
-  assertEquals('BB2C=extra', qd.getValues().join(''));
+  assertArrayEquals(['B', 'B2', 'C=extra'], qd.getValues());
   qd.add('d', 'D');
   qd.add('d', 'D');
-  assertEquals('BB2C=extraDD', qd.getValues().join(''));
+  assertArrayEquals(['B', 'B2', 'C=extra', 'D', 'D'], qd.getValues());
+
+  qd.add('e', new String('Eee'));
+  assertArrayEquals(['B', 'B2', 'C=extra', 'D', 'D', 'Eee'], qd.getValues());
+
+  assertArrayEquals(['Eee'], qd.getValues('e'));
 }
 
 function testQueryDataSet() {
@@ -699,9 +708,9 @@ function testQueryDataCreateFromMap() {
 
 function testQueryDataCreateFromKeysValues() {
   assertEquals('', String(goog.Uri.QueryData.createFromKeysValues([], [])));
-  assertEquals('a=A&b=B&c=C', String(goog.Uri.QueryData.createFromKeysValues( 
+  assertEquals('a=A&b=B&c=C', String(goog.Uri.QueryData.createFromKeysValues(
       ['a','b','c'],['A','B','C'])));
-  assertEquals('a=A&a=B&a=C', String(goog.Uri.QueryData.createFromKeysValues( 
+  assertEquals('a=A&a=B&a=C', String(goog.Uri.QueryData.createFromKeysValues(
       ['a','a','a'],['A','B','C'])));
 }
 
@@ -821,6 +830,20 @@ function testQueryNotModified() {
   assertEquals('?foo=', new goog.Uri('?foo=').toString());
   assertEquals('?foo=bar', new goog.Uri('?foo=bar').toString());
   assertEquals('?&=&=&', new goog.Uri('?&=&=&').toString());
+}
+
+function testRelativePathNotUnescapedWithColon() {
+  assertEquals('javascript%3aalert(1)',
+               new goog.Uri('javascript%3aalert(1)').toString());
+}
+
+function testAbsolutePathUnescapedWithColon() {
+  assertEquals('/javascript:alert(1)',
+               new goog.Uri('/javascript%3aalert(1)').toString());
+  assertEquals('http://www.foo.bar/path:with:colon/x',
+               new goog.Uri('http://www.foo.bar/path:with:colon/x').toString());
+  assertEquals('//www.foo.bar/path:with:colon/x',
+               new goog.Uri('//www.foo.bar/path:with:colon/x').toString());
 }
 
 function assertDotRemovedEquals(expected, path) {

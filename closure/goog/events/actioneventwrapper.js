@@ -14,7 +14,7 @@
 
 /**
  * @fileoverview Action event wrapper implementation.
- *
+ * @author eae@google.com (Emil A Eklund)
  */
 
 goog.provide('goog.events.actionEventWrapper');
@@ -24,6 +24,7 @@ goog.require('goog.events.EventHandler');
 goog.require('goog.events.EventType');
 goog.require('goog.events.EventWrapper');
 goog.require('goog.events.KeyCodes');
+
 
 
 /**
@@ -53,7 +54,9 @@ goog.events.actionEventWrapper = new goog.events.ActionEventWrapper_();
  */
 goog.events.ActionEventWrapper_.EVENT_TYPES_ = [
   goog.events.EventType.CLICK,
-  goog.events.EventType.KEYPRESS
+  goog.userAgent.GECKO ?
+      goog.events.EventType.KEYPRESS :
+      goog.events.EventType.KEYDOWN
 ];
 
 
@@ -75,14 +78,15 @@ goog.events.ActionEventWrapper_.EVENT_TYPES_ = [
 goog.events.ActionEventWrapper_.prototype.listen = function(target, listener,
     opt_capt, opt_scope, opt_eventHandler) {
   var callback = function(e) {
-    if (e.type == goog.events.EventType.CLICK &&
-        e.isButton(goog.events.BrowserEvent.MouseButton.LEFT) ||
-        e.type == goog.events.EventType.KEYPRESS && (
-            e.keyCode == goog.events.KeyCodes.ENTER ||
-            e.keyCode == goog.events.KeyCodes.MAC_ENTER)) {
+    if (e.type == goog.events.EventType.CLICK && e.isMouseActionButton()) {
+      listener.call(opt_scope, e);
+    } else if (e.keyCode == goog.events.KeyCodes.ENTER ||
+        e.keyCode == goog.events.KeyCodes.MAC_ENTER) {
+      // convert keydown to keypress for backward compatibility.
+      e.type = goog.events.EventType.KEYPRESS;
       listener.call(opt_scope, e);
     }
-  }
+  };
   callback.listener_ = listener;
   callback.scope_ = opt_scope;
 

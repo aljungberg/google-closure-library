@@ -29,7 +29,7 @@
  * var slider = new goog.ui.Slider;
  * slider.decorate(document.getElementById('slider'));
  *
- *
+ * @author arv@google.com (Erik Arvidsson)
  * @see ../demos/slider.html
  */
 
@@ -45,6 +45,7 @@ goog.require('goog.dom.a11y');
 goog.require('goog.dom.a11y.Role');
 goog.require('goog.ui.SliderBase');
 goog.require('goog.ui.SliderBase.Orientation');
+
 
 
 /**
@@ -97,7 +98,7 @@ goog.ui.Slider.prototype.getCssClass = function(orient) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.Slider.prototype.createThumbs = function() {
   // find thumb
   var element = this.getElement();

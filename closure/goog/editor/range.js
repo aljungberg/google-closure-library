@@ -183,12 +183,21 @@ goog.editor.range.selectNodeStart = function(node) {
  * @return {goog.dom.AbstractRange} The newly selected range.
  */
 goog.editor.range.placeCursorNextTo = function(node, toLeft) {
-  var dh = goog.dom.getDomHelper(node);
   var parent = node.parentNode;
   var offset = goog.array.indexOf(parent.childNodes, node) +
       (toLeft ? 0 : 1);
   var point = goog.editor.range.Point.createDeepestPoint(
       parent, offset, toLeft);
+  // NOTE: It's for fixing bug that selecting HR tag breaks
+  // the cursor position In IE9. See http://b/6040468.
+  if (goog.userAgent.IE && goog.userAgent.isVersion('9') &&
+      point.node.nodeType == goog.dom.NodeType.ELEMENT &&
+      point.node.tagName == goog.dom.TagName.HR) {
+    var hr = point.node;
+    point.node = hr.parentNode;
+    point.offset = goog.array.indexOf(point.node.childNodes, hr) +
+        (toLeft ? 0 : 1);
+  }
   var range = goog.dom.Range.createCaret(point.node, point.offset);
   range.select();
   return range;
@@ -461,6 +470,7 @@ goog.editor.range.intersectsTag = function(range, tagName) {
 };
 
 
+
 /**
  * One endpoint of a range, represented as a Node and and offset.
  * @param {Node} node The node containing the point.
@@ -541,7 +551,6 @@ goog.editor.range.Point.getPointAtEndOfNode = function(node) {
 };
 
 
-
 /**
  * Saves the range by inserting carets into the HTML.
  *
@@ -556,6 +565,7 @@ goog.editor.range.Point.getPointAtEndOfNode = function(node) {
 goog.editor.range.saveUsingNormalizedCarets = function(range) {
   return new goog.editor.range.NormalizedCaretRange_(range);
 };
+
 
 
 /**

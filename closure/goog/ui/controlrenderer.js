@@ -14,9 +14,9 @@
 
 /**
  * @fileoverview Base class for control renderers.
- * TODO(user):  If the renderer framework works well, pull it into Component.
+ * TODO(attila):  If the renderer framework works well, pull it into Component.
  *
- *
+ * @author attila@google.com (Attila Bodis)
  */
 
 goog.provide('goog.ui.ControlRenderer');
@@ -31,6 +31,7 @@ goog.require('goog.style');
 goog.require('goog.ui.Component.State');
 goog.require('goog.ui.ControlContent');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -174,8 +175,11 @@ goog.ui.ControlRenderer.prototype.getAriaRole = function() {
  */
 goog.ui.ControlRenderer.prototype.createDom = function(control) {
   // Create and return DIV wrapping contents.
-  return control.getDomHelper().createDom(
+  var element = control.getDomHelper().createDom(
       'div', this.getClassNames(control).join(' '), control.getContent());
+
+  this.setAriaStates(control, element);
+  return element;
 };
 
 
@@ -257,6 +261,7 @@ goog.ui.ControlRenderer.prototype.canDecorate = function(element) {
  * @param {goog.ui.Control} control Control instance to decorate the element.
  * @param {Element} element Element to decorate.
  * @return {Element} Decorated element.
+ * @suppress {visibility} setContentInternal and setStateInternal
  */
 goog.ui.ControlRenderer.prototype.decorate = function(control, element) {
   // Set the control's ID to the decorated element's DOM ID, if any.
@@ -330,6 +335,7 @@ goog.ui.ControlRenderer.prototype.decorate = function(control, element) {
     goog.dom.classes.set(element, classNames.join(' '));
   }
 
+  this.setAriaStates(control, element);
   return element;
 };
 
@@ -351,7 +357,7 @@ goog.ui.ControlRenderer.prototype.initializeDom = function(control) {
 
   // Initialize keyboard focusability (tab index).  We assume that components
   // aren't focusable by default (i.e have no tab index), and only touch the
-  // DOM if the component is focusable, enabled, and visible, and therfore
+  // DOM if the component is focusable, enabled, and visible, and therefore
   // needs a tab index.
   if (control.isEnabled()) {
     this.setFocusable(control, control.isVisible());
@@ -360,16 +366,44 @@ goog.ui.ControlRenderer.prototype.initializeDom = function(control) {
 
 
 /**
- * Sets the element's ARIA role on browsers that support it.
+ * Sets the element's ARIA role.
  * @param {Element} element Element to update.
+ * @param {?goog.dom.a11y.Role=} opt_preferredRole The preferred ARIA role.
  */
-goog.ui.ControlRenderer.prototype.setAriaRole = function(element) {
-  // setAriaRole is a no-op everywhere except Gecko.
-  if (goog.userAgent.GECKO) {
-    var ariaRole = this.getAriaRole();
-    if (ariaRole) {
-      goog.dom.a11y.setRole(element, ariaRole);
-    }
+goog.ui.ControlRenderer.prototype.setAriaRole = function(element,
+    opt_preferredRole) {
+  var ariaRole = opt_preferredRole || this.getAriaRole();
+  if (ariaRole) {
+    goog.dom.a11y.setRole(element, ariaRole);
+  }
+};
+
+
+/**
+ * Sets the element's ARIA states. An element does not need an ARIA role in
+ * order to have an ARIA state. Only states which are initialized to be true
+ * will be set.
+ * @param {!goog.ui.Control} control Control whose ARIA state will be updated.
+ * @param {!Element} element Element whose ARIA state is to be updated.
+ */
+goog.ui.ControlRenderer.prototype.setAriaStates = function(control, element) {
+  goog.asserts.assert(control);
+  goog.asserts.assert(element);
+  if (!control.isEnabled()) {
+    this.updateAriaState(element, goog.ui.Component.State.DISABLED,
+                         true);
+  }
+  if (control.isSelected()) {
+    this.updateAriaState(element, goog.ui.Component.State.SELECTED,
+                         true);
+  }
+  if (control.isSupportedState(goog.ui.Component.State.CHECKED)) {
+    this.updateAriaState(element, goog.ui.Component.State.CHECKED,
+                         control.isChecked());
+  }
+  if (control.isSupportedState(goog.ui.Component.State.OPENED)) {
+    this.updateAriaState(element, goog.ui.Component.State.OPENED,
+                         control.isOpen());
   }
 };
 
@@ -488,7 +522,7 @@ goog.ui.ControlRenderer.prototype.setState = function(control, state, enable) {
 
 
 /**
- * Updates the element's ARIA (accessibility) state on Gecko.
+ * Updates the element's ARIA (accessibility) state.
  * @param {Element} element Element whose ARIA state is to be updated.
  * @param {goog.ui.Component.State} state Component state being enabled or
  *     disabled.
@@ -497,21 +531,17 @@ goog.ui.ControlRenderer.prototype.setState = function(control, state, enable) {
  */
 goog.ui.ControlRenderer.prototype.updateAriaState = function(element, state,
     enable) {
-  // updateAriaState is a no-op everywhere except Gecko.
-  if (goog.userAgent.GECKO) {
-    // Ensure the ARIA state map exists.
-    if (!goog.ui.ControlRenderer.ARIA_STATE_MAP_) {
-      goog.ui.ControlRenderer.ARIA_STATE_MAP_ = goog.object.create(
-          goog.ui.Component.State.DISABLED, goog.dom.a11y.State.DISABLED,
-          goog.ui.Component.State.ACTIVE, goog.dom.a11y.State.PRESSED,
-          goog.ui.Component.State.SELECTED, goog.dom.a11y.State.SELECTED,
-          goog.ui.Component.State.CHECKED, goog.dom.a11y.State.CHECKED,
-          goog.ui.Component.State.OPENED, goog.dom.a11y.State.EXPANDED);
-    }
-    var ariaState = goog.ui.ControlRenderer.ARIA_STATE_MAP_[state];
-    if (ariaState) {
-      goog.dom.a11y.setState(element, ariaState, enable);
-    }
+  // Ensure the ARIA state map exists.
+  if (!goog.ui.ControlRenderer.ARIA_STATE_MAP_) {
+    goog.ui.ControlRenderer.ARIA_STATE_MAP_ = goog.object.create(
+        goog.ui.Component.State.DISABLED, goog.dom.a11y.State.DISABLED,
+        goog.ui.Component.State.SELECTED, goog.dom.a11y.State.SELECTED,
+        goog.ui.Component.State.CHECKED, goog.dom.a11y.State.CHECKED,
+        goog.ui.Component.State.OPENED, goog.dom.a11y.State.EXPANDED);
+  }
+  var ariaState = goog.ui.ControlRenderer.ARIA_STATE_MAP_[state];
+  if (ariaState) {
+    goog.dom.a11y.setState(element, ariaState, enable);
   }
 };
 
@@ -593,7 +623,7 @@ goog.ui.ControlRenderer.prototype.getCssClass = function() {
  * in IE6 and below. See {@link IE6_CLASS_COMBINATIONS} for more detail. This
  * method doesn't reference {@link IE6_CLASS_COMBINATIONS} so that it can be
  * compiled out, but subclasses should return their IE6_CLASS_COMBINATIONS
- * static contasnt instead.
+ * static constant instead.
  * @return {Array.<Array.<string>>} Array of class name combinations.
  */
 goog.ui.ControlRenderer.prototype.getIe6ClassCombinations = function() {
@@ -741,12 +771,12 @@ goog.ui.ControlRenderer.prototype.getClassNamesForState = function(state) {
  *     if none).
  * @protected
  */
-  goog.ui.ControlRenderer.prototype.getClassForState = function(state) {
-    if (!this.classByState_) {
-      this.createClassByStateMap_();
-    }
-    return this.classByState_[state];
-  };
+goog.ui.ControlRenderer.prototype.getClassForState = function(state) {
+  if (!this.classByState_) {
+    this.createClassByStateMap_();
+  }
+  return this.classByState_[state];
+};
 
 
 /**

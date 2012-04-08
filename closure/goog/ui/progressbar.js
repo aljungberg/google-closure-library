@@ -15,7 +15,7 @@
 /**
  * @fileoverview Implementation of a progress bar.
  *
- *
+ * @author arv@google.com (Erik Arvidsson)
  * @see ../demos/progressbar.html
  */
 
@@ -32,6 +32,7 @@ goog.require('goog.ui.Component');
 goog.require('goog.ui.Component.EventType');
 goog.require('goog.ui.RangeModel');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -78,6 +79,7 @@ goog.ui.ProgressBar.ORIENTATION_TO_CSS_NAME_[
 goog.ui.ProgressBar.ORIENTATION_TO_CSS_NAME_[
     goog.ui.ProgressBar.Orientation.HORIZONTAL] =
         goog.getCssName('progress-bar-horizontal');
+
 
 /**
  * Creates the DOM nodes needed for the progress bar
@@ -141,7 +143,7 @@ goog.ui.ProgressBar.prototype.attachEvents_ = function() {
 
 
 /**
- * Adds the initial event listeners to the element.
+ * Removes the event listeners added by attachEvents_.
  * @private
  */
 goog.ui.ProgressBar.prototype.detachEvents_ = function() {
@@ -294,7 +296,7 @@ goog.ui.ProgressBar.prototype.updateUi_ = function() {
     var ratio = (val - min) / (max - min);
     var size = Math.round(ratio * 100);
     if (this.orientation_ == goog.ui.ProgressBar.Orientation.VERTICAL) {
-      // Note(user): IE up to version 6 has some serious computation bugs when
+      // Note(arv): IE up to version 6 has some serious computation bugs when
       // using percentages or bottom. We therefore first set the height to
       // 100% and measure that and base the top and height on that size instead.
       if (goog.userAgent.IE && goog.userAgent.VERSION < 7) {
@@ -362,14 +364,13 @@ goog.ui.ProgressBar.prototype.getOrientation = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.ProgressBar.prototype.disposeInternal = function() {
   this.detachEvents_();
   goog.ui.ProgressBar.superClass_.disposeInternal.call(this);
   this.thumbElement_ = null;
   this.rangeModel_.dispose();
 };
-
 
 
 /**

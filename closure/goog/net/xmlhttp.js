@@ -14,8 +14,8 @@
 
 /**
  * @fileoverview Low level handling of XMLHttpRequest.
- *
- *
+ * @author arv@google.com (Erik Arvidsson)
+ * @author dbk@google.com (David Barrett-Kahn)
  */
 
 goog.provide('goog.net.DefaultXmlHttpFactory');
@@ -25,7 +25,6 @@ goog.provide('goog.net.XmlHttp.ReadyState');
 
 goog.require('goog.net.WrapperXmlHttpFactory');
 goog.require('goog.net.XmlHttpFactory');
-
 
 
 /**
@@ -131,6 +130,7 @@ goog.net.XmlHttp.setGlobalFactory = function(factory) {
 };
 
 
+
 /**
  * Default factory to use when creating xhr objects.  You probably shouldn't be
  * instantiating this directly, but rather using it via goog.net.XmlHttp.
@@ -143,7 +143,7 @@ goog.net.DefaultXmlHttpFactory = function() {
 goog.inherits(goog.net.DefaultXmlHttpFactory, goog.net.XmlHttpFactory);
 
 
-/** @inheritDoc */
+/** @override */
 goog.net.DefaultXmlHttpFactory.prototype.createInstance = function() {
   var progId = this.getProgId_();
   if (progId) {
@@ -154,7 +154,7 @@ goog.net.DefaultXmlHttpFactory.prototype.createInstance = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.net.DefaultXmlHttpFactory.prototype.internalGetOptions = function() {
   var progId = this.getProgId_();
   var options = {};

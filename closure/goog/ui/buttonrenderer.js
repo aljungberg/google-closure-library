@@ -15,7 +15,7 @@
 /**
  * @fileoverview Default renderer for {@link goog.ui.Button}s.
  *
- *
+ * @author attila@google.com (Attila Bodis)
  */
 
 goog.provide('goog.ui.ButtonRenderer');
@@ -71,8 +71,8 @@ goog.ui.ButtonRenderer.prototype.getAriaRole = function() {
 
 
 /**
- * Updates the button's ARIA (accessibility) state on Gecko if the button
- * is being treated as a checkbox.
+ * Updates the button's ARIA (accessibility) state if the button is being
+ * treated as a checkbox.
  * @param {Element} element Element whose ARIA state is to be updated.
  * @param {goog.ui.Component.State} state Component state being enabled or
  *     disabled.
@@ -82,19 +82,17 @@ goog.ui.ButtonRenderer.prototype.getAriaRole = function() {
  */
 goog.ui.ButtonRenderer.prototype.updateAriaState = function(element, state,
     enable) {
-  if (goog.userAgent.GECKO) {
-    // If button has CHECKED state, assign ARIA atrribute aria-pressed
-    if (state == goog.ui.Component.State.CHECKED) {
-      goog.dom.a11y.setState(element, goog.dom.a11y.State.PRESSED, enable);
-    } else {
-      goog.ui.ButtonRenderer.superClass_.updateAriaState.call(this, element,
-          state, enable);
-    }
+  // If button has CHECKED state, assign ARIA atrribute aria-pressed
+  if (state == goog.ui.Component.State.CHECKED) {
+    goog.dom.a11y.setState(element, goog.dom.a11y.State.PRESSED, enable);
+  } else {
+    goog.ui.ButtonRenderer.superClass_.updateAriaState.call(this, element,
+        state, enable);
   }
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.ButtonRenderer.prototype.createDom = function(button) {
   var element = goog.ui.ButtonRenderer.superClass_.createDom.call(this, button);
 
@@ -108,16 +106,17 @@ goog.ui.ButtonRenderer.prototype.createDom = function(button) {
     this.setValue(element, value);
   }
 
-  // Set aria-pressed to false initially.
+  // If this is a toggle button, set ARIA state
   if (button.isSupportedState(goog.ui.Component.State.CHECKED)) {
-    this.updateAriaState(element, goog.ui.Component.State.CHECKED, false);
+    this.updateAriaState(element, goog.ui.Component.State.CHECKED,
+                         button.isChecked());
   }
 
   return element;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.ButtonRenderer.prototype.decorate = function(button, element) {
   // The superclass implementation takes care of common attributes; we only
   // need to set the value and the tooltip.
@@ -127,9 +126,10 @@ goog.ui.ButtonRenderer.prototype.decorate = function(button, element) {
   button.setValueInternal(this.getValue(element));
   button.setTooltipInternal(this.getTooltip(element));
 
-  // Set aria-pressed to false initially.
+  // If this is a toggle button, set ARIA state
   if (button.isSupportedState(goog.ui.Component.State.CHECKED)) {
-    this.updateAriaState(element, goog.ui.Component.State.CHECKED, false);
+    this.updateAriaState(element, goog.ui.Component.State.CHECKED,
+                         button.isChecked());
   }
 
   return element;
@@ -150,7 +150,6 @@ goog.ui.ButtonRenderer.prototype.getValue = goog.nullFunction;
  * the new value.  No-op in the base class.
  * @param {Element} element The button's root element.
  * @param {string} value New value.
- * @protected
  */
 goog.ui.ButtonRenderer.prototype.setValue = goog.nullFunction;
 
@@ -202,7 +201,7 @@ goog.ui.ButtonRenderer.prototype.setCollapsed = function(button, sides) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.ButtonRenderer.prototype.getCssClass = function() {
   return goog.ui.ButtonRenderer.CSS_CLASS;
 };

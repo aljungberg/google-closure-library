@@ -3,7 +3,7 @@
 <!--
 Copyright 2007 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!--
@@ -18,13 +18,13 @@ See the COPYING file for details.
   goog.require('goog.functions');
   goog.require('goog.net.WrapperXmlHttpFactory');
   goog.require('goog.net.XhrIo');
+  goog.require('goog.object');
   goog.require('goog.string');
   goog.require('goog.testing.MockClock');
   goog.require('goog.testing.jsunit');
   goog.require('goog.testing.net.XhrIo');
   goog.require('goog.testing.recordFunction');
-
-
+  goog.require('goog.Uri');
 </script>
 <script>
 
@@ -67,9 +67,11 @@ MockXmlHttp.prototype.abort = function() {};
 
 MockXmlHttp.prototype.setRequestHeader = function(key, value) {};
 
+var lastMockXmlHttp;
 goog.net.XmlHttp.setGlobalFactory(new goog.net.WrapperXmlHttpFactory(
     function() {
-      return new MockXmlHttp();
+      lastMockXmlHttp = new MockXmlHttp();
+      return lastMockXmlHttp;
     },
     function() {
       return {};
@@ -81,6 +83,7 @@ var originalEntryPoint =
     goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_;
 
 function setUp() {
+  lastMockXmlHttp = null;
   clock = new goog.testing.MockClock(true);
 }
 
@@ -124,7 +127,273 @@ function testSyncSendFailure() {
 
   var inSend = true;
   x.send('url');
-  x.xhr_.status = 404;
+  lastMockXmlHttp.status = 404;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendRelativeZeroStatus() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertEquals('Should be the same as ', e.target.isSuccess(),
+        window.location.href.toLowerCase().indexOf("file:") == 0);
+    count++;
+  });
+
+  var inSend = true;
+  x.send('relative');
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendRelativeUriZeroStatus() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertEquals('Should be the same as ', e.target.isSuccess(),
+      window.location.href.toLowerCase().indexOf("file:") == 0);
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('relative'));
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendHttpZeroStatusFailure() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertFalse('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send('http://foo');
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendHttpUpperZeroStatusFailure() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertFalse('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send('HTTP://foo');
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendHttpUpperUriZeroStatusFailure() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertFalse('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('HTTP://foo'));
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendHttpUriZeroStatusFailure() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertFalse('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('http://foo'));
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendHttpUriZeroStatusFailure() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertFalse('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('HTTP://foo'));
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendHttpsZeroStatusFailure() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertFalse('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send('https://foo');
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendFileUpperZeroStatusSuccess() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertTrue('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send('FILE:///foo');
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendFileUriZeroStatusSuccess() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertTrue('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('file:///foo'));
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendDummyUriZeroStatusSuccess() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertTrue('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('dummy:///foo'));
+  lastMockXmlHttp.status = 0;
+  inSend = false;
+
+  clock.tick(1); // callOnce(f, 0, ...)
+
+  assertEquals('Complete should have been called once', 1, count);
+}
+
+
+function testSendFileUpperUriZeroStatusSuccess() {
+  MockXmlHttp.syncSend = true;
+  var count = 0;
+
+  var x = new goog.net.XhrIo;
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+    assertFalse('Should not fire complete from inside send', inSend);
+    assertTrue('Should not be succesful', e.target.isSuccess());
+    count++;
+  });
+
+  var inSend = true;
+  x.send(goog.Uri.parse('FILE:///foo'));
+  lastMockXmlHttp.status = 0;
   inSend = false;
 
   clock.tick(1); // callOnce(f, 0, ...)
@@ -140,16 +409,12 @@ function testSendFromListener() {
   var x = new goog.net.XhrIo;
   goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
     count++;
-    
-    var thrown = false;
-    try {
+
+    var e = assertThrows(function() {
       x.send('url2');
-    } catch(e) {
-      thrown = true;
-      assertEquals(e.message,
-          '[goog.net.XhrIo] Object is active with another request');
-    }
-    assertTrue(thrown);
+    });
+    assertEquals('[goog.net.XhrIo] Object is active with another request',
+        e.message);
   });
 
   x.send('url');
@@ -206,18 +471,32 @@ function testProtectEntryPointCalledOnAsyncSend() {
   });
 
   x.send('url');
-  var readyStateChangeHandlerError = null;
-  try {
-    x.xhr_.complete();
-  } catch (e) {
-    readyStateChangeHandlerError = e;
-  }
+  assertThrows(function() {
+    lastMockXmlHttp.complete();
+  });
 
-  assertNotNull(readyStateChangeHandlerError);
   assertTrue('Error handler callback should be called on async send.',
       errorHandlerCallbackCalled);
 }
 
+function testXHRIsDiposedEvenIfAListenerThrowsAnExceptionOnComplete() {
+  MockXmlHttp.syncSend = false;
+
+  var x = new goog.net.XhrIo;
+
+  goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
+      throw Error();
+  }, false, x);
+
+  x.send('url');
+  assertThrows(function() {
+    lastMockXmlHttp.complete();
+  });
+
+  // The XHR should have been disposed, even though the listener threw an
+  // exception.
+  assertNull(x.xhr_);
+}
 
 function testDisposeInternalDoesNotAbortXhrRequestObjectWhenActiveIsFalse() {
   MockXmlHttp.syncSend = false;
@@ -230,11 +509,11 @@ function testDisposeInternalDoesNotAbortXhrRequestObjectWhenActiveIsFalse() {
 
   goog.events.listen(x, goog.net.EventType.COMPLETE, function(e) {
     this.active_ = false;
-    this.disposeInternal();
+    this.dispose();
   }, false, x);
 
   x.send('url');
-  x.xhr_.complete();
+  lastMockXmlHttp.complete();
 
   goog.net.XmlHttp = xmlHttp;
   assertFalse(abortCalled);
@@ -304,6 +583,69 @@ function testEntryPointRegistry() {
   assertEquals(
       replacement,
       goog.net.XhrIo.prototype.onReadyStateChangeEntryPoint_);
+}
+
+function testSetWithCredentials() {
+  // Test on XHR objects that don't have the withCredentials property (older
+  // browsers).
+  var x = new goog.net.XhrIo;
+  x.setWithCredentials(true);
+  x.send('url');
+  assertFalse(
+      'withCredentials should not be set on an XHR object if the property ' +
+      'does not exist.',
+      goog.object.containsKey(lastMockXmlHttp, 'withCredentials'));
+
+  // Test on XHR objects that have the withCredentials property.
+  MockXmlHttp.prototype.withCredentials = false;
+  x = new goog.net.XhrIo;
+  x.setWithCredentials(true);
+  x.send('url');
+  assertTrue(
+      'withCredentials should be set on an XHR object if the property exists',
+      goog.object.containsKey(lastMockXmlHttp, 'withCredentials'));
+
+  assertTrue(
+      'withCredentials value not set on XHR object',
+      lastMockXmlHttp.withCredentials);
+
+  // Reset the prototype so it does not effect other tests.
+  delete MockXmlHttp.prototype.withCredentials;
+}
+
+function testGetResponse() {
+  var x = new goog.net.XhrIo;
+
+  // No XHR yet
+  assertEquals(null, x.getResponse());
+
+  // XHR with no .response and no response type, gets text.
+  x.xhr_ = {};
+  x.xhr_.responseText = 'text';
+  assertEquals('text', x.getResponse());
+
+  // Response type of text gets text as well.
+  x.setResponseType(goog.net.XhrIo.ResponseType.TEXT);
+  x.xhr_.responseText = '';
+  assertEquals('', x.getResponse());
+
+  // Response type of array buffer gets the array buffer.
+  x.xhr_.mozResponseArrayBuffer = 'ab';
+  x.setResponseType(goog.net.XhrIo.ResponseType.ARRAY_BUFFER);
+  assertEquals('ab', x.getResponse());
+
+  // With a response field, it is returned no matter what value it has.
+  x.xhr_.response = undefined;
+  assertEquals(undefined, x.getResponse());
+
+  x.xhr_.response = null;
+  assertEquals(null, x.getResponse());
+
+  x.xhr_.response = '';
+  assertEquals('', x.getResponse());
+
+  x.xhr_.response = 'resp';
+  assertEquals('resp', x.getResponse());
 }
 
 </script>

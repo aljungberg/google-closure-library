@@ -29,7 +29,6 @@
  *    ACTION,
  *    this.onAction_);<code>
  *
- *
  */
 
 goog.provide('goog.events.ActionEvent');
@@ -43,6 +42,8 @@ goog.require('goog.events.EventTarget');
 goog.require('goog.events.EventType');
 goog.require('goog.events.KeyCodes');
 goog.require('goog.userAgent');
+
+
 
 /**
  * A wrapper around an element that you want to listen to ACTION events on.
@@ -76,6 +77,7 @@ goog.events.ActionHandler.EventType = {
   ACTION: 'action',
   BEFOREACTION: 'beforeaction'
 };
+
 
 /**
  * Key event type to listen for.
@@ -144,9 +146,7 @@ goog.events.ActionHandler.prototype.dispatchEvents_ = function(e) {
 };
 
 
-/**
- * Disposes of the action handler.
- */
+/** @override */
 goog.events.ActionHandler.prototype.disposeInternal = function() {
   goog.events.ActionHandler.superClass_.disposeInternal.call(this);
   goog.events.unlisten(this.element_, goog.events.ActionHandler.KEY_EVENT_TYPE_,

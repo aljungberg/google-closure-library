@@ -3,7 +3,7 @@
 <!--
 Copyright 2006 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <head>
@@ -68,8 +68,8 @@ function tearDown() {
  * Test browser detection for a user agent configuration.
  * @param {Array.<number>} expectedAgents Array of expected userAgents.
  * @param {string} uaString User agent string.
- * @param {string} opt_product Navigator product string.
- * @param {string} opt_vendor Navigator vendor string.
+ * @param {string=} opt_product Navigator product string.
+ * @param {string=} opt_vendor Navigator vendor string.
  */
 function assertUserAgent(expectedAgents, uaString, opt_product, opt_vendor) {
   //alert('mocking');
@@ -190,6 +190,8 @@ function testGecko() {
       '1.8.0.6');
   assertGecko('Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8)' +
       'Gecko/20060321 Gecko/2.0a1', '1.8');
+  assertGecko('Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/6.0 Firefox/6.0',
+      '6.0');
 }
 
 function testIe() {

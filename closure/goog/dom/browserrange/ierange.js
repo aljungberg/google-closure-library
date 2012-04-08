@@ -18,8 +18,8 @@
  * DO NOT USE THIS FILE DIRECTLY.  Use goog.dom.Range instead.
  *
  * @author robbyw@google.com (Robby Walker)
- *
- *
+ * @author ojan@google.com (Ojan Vafai)
+ * @author jparent@google.com (Julie Parent)
  */
 
 
@@ -36,6 +36,7 @@ goog.require('goog.dom.browserrange.AbstractRange');
 goog.require('goog.iter');
 goog.require('goog.iter.StopIteration');
 goog.require('goog.string');
+
 
 
 /**
@@ -62,7 +63,6 @@ goog.dom.browserrange.IeRange = function(range, doc) {
 };
 goog.inherits(goog.dom.browserrange.IeRange,
     goog.dom.browserrange.AbstractRange);
-
 
 
 /**
@@ -306,7 +306,6 @@ goog.dom.browserrange.IeRange.prototype.startOffset_ = -1;
 goog.dom.browserrange.IeRange.prototype.endOffset_ = -1;
 
 
-
 /**
  * @return {goog.dom.browserrange.IeRange} A clone of this range.
  */
@@ -320,7 +319,7 @@ goog.dom.browserrange.IeRange.prototype.clone = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getBrowserRange = function() {
   return this.range_;
 };
@@ -336,7 +335,7 @@ goog.dom.browserrange.IeRange.prototype.clearCachedValues_ = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getContainer = function() {
   if (!this.parentNode_) {
     var selectText = this.range_.text;
@@ -432,7 +431,7 @@ goog.dom.browserrange.IeRange.prototype.findDeepestContainer_ = function(node) {
       var isNativeInRangeErratic = this.isCollapsed() && isChildRangeErratic;
 
       // In case 2 mentioned above, childRange is also collapsed. So we need to
-      // compare start of this range with both start and end of child range. 
+      // compare start of this range with both start and end of child range.
       var inChildRange = isNativeInRangeErratic ?
           (this.compareBrowserRangeEndpoints(childRange, start, start) >= 0 &&
               this.compareBrowserRangeEndpoints(childRange, start, end) <= 0) :
@@ -447,7 +446,7 @@ goog.dom.browserrange.IeRange.prototype.findDeepestContainer_ = function(node) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getStartNode = function() {
   if (!this.startNode_) {
     this.startNode_ = this.getEndpointNode_(goog.dom.RangeEndpoint.START);
@@ -459,7 +458,7 @@ goog.dom.browserrange.IeRange.prototype.getStartNode = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getStartOffset = function() {
   if (this.startOffset_ < 0) {
     this.startOffset_ = this.getOffset_(goog.dom.RangeEndpoint.START);
@@ -471,7 +470,7 @@ goog.dom.browserrange.IeRange.prototype.getStartOffset = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getEndNode = function() {
   if (this.isCollapsed()) {
     return this.getStartNode();
@@ -483,7 +482,7 @@ goog.dom.browserrange.IeRange.prototype.getEndNode = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getEndOffset = function() {
   if (this.isCollapsed()) {
     return this.getStartOffset();
@@ -498,7 +497,7 @@ goog.dom.browserrange.IeRange.prototype.getEndOffset = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.compareBrowserRangeEndpoints = function(
     range, thisEndpoint, otherEndpoint) {
   return this.range_.compareEndPoints(
@@ -536,7 +535,7 @@ goog.dom.browserrange.IeRange.prototype.getEndpointNode_ = function(endpoint,
   // dom related properties like ownerDocument, parentNode, nextSibling etc
   // cause error when accessed. Therefore use the for-loop on childNodes to
   // iterate.
-  for (var j = 0, length = node.childNodes.length; j < length; j++ ) {
+  for (var j = 0, length = node.childNodes.length; j < length; j++) {
     var i = isStartEndpoint ? j : length - j - 1;
     var child = node.childNodes[i];
     var childRange;
@@ -716,7 +715,7 @@ goog.dom.browserrange.IeRange.prototype.isRangeInDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.isCollapsed = function() {
   // Note(user) : The earlier implementation used (range.text == ''), but this
   // fails when (range.htmlText == '<br>')
@@ -725,13 +724,13 @@ goog.dom.browserrange.IeRange.prototype.isCollapsed = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getText = function() {
   return this.range_.text;
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.getValidHtml = function() {
   return this.range_.htmlText;
 };
@@ -740,16 +739,19 @@ goog.dom.browserrange.IeRange.prototype.getValidHtml = function() {
 // SELECTION MODIFICATION
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.select = function(opt_reverse) {
   // IE doesn't support programmatic reversed selections.
   this.range_.select();
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.removeContents = function() {
-  if (this.range_.htmlText) {
+  // NOTE: Sometimes htmlText is non-empty, but the range is actually empty.
+  // TODO(gboyer): The htmlText check is probably unnecessary, but I left it in
+  // for paranoia.
+  if (!this.isCollapsed() && this.range_.htmlText) {
     // Store some before-removal state.
     var startNode = this.getStartNode();
     var endNode = this.getEndNode();
@@ -763,35 +765,16 @@ goog.dom.browserrange.IeRange.prototype.removeContents = function() {
     clone.moveStart('character', 1);
     clone.moveStart('character', -1);
 
-    // However, sometimes when the range is empty, moving the start back and
-    // forth ends up changing the range.  This indicates a case we need to
-    // handle manually.
-    if (clone.text != oldText) {
-      // Delete all nodes entirely contained in the range.
-      var iter = new goog.dom.NodeIterator(startNode, false, true);
-      var toDelete = [];
-      goog.iter.forEach(iter, function(node) {
-        // Any text node we encounter here is by definition contained entirely
-        // in the range.
-        if (node.nodeType != goog.dom.NodeType.TEXT &&
-            this.containsNode(node)) {
-          toDelete.push(node);
-          iter.skipTag();
-        }
-        if (node == endNode) {
-          throw goog.iter.StopIteration;
-        }
-      });
-      this.collapse(true);
-      goog.array.forEach(toDelete, goog.dom.removeNode);
-
-      this.clearCachedValues_();
-      return;
+    // However, sometimes moving the start back and forth ends up changing the
+    // range.
+    // TODO(gboyer): This condition used to happen for empty ranges, but (1)
+    // never worked, and (2) the isCollapsed call should protect against empty
+    // ranges better than before.  However, this is left for paranoia.
+    if (clone.text == oldText) {
+      this.range_ = clone;
     }
 
-    // Outside of the unfortunate cases where we have to handle deletion
-    // manually, we can use the browser's native deletion code.
-    this.range_ = clone;
+    // Use the browser's native deletion code.
     this.range_.text = '';
     this.clearCachedValues_();
 
@@ -821,6 +804,7 @@ goog.dom.browserrange.IeRange.prototype.removeContents = function() {
     }
   }
 };
+
 
 /**
  * @param {TextRange} range The range to get a dom helper for.
@@ -875,7 +859,7 @@ goog.dom.browserrange.IeRange.pasteElement_ = function(range, element,
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.surroundContents = function(element) {
   // Make sure the element is detached from the document.
   goog.dom.removeNode(element);
@@ -935,7 +919,7 @@ goog.dom.browserrange.IeRange.insertNode_ = function(clone, node,
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.insertNode = function(node, before) {
   var output = goog.dom.browserrange.IeRange.insertNode_(
       this.range_.duplicate(), node, before);
@@ -944,7 +928,7 @@ goog.dom.browserrange.IeRange.prototype.insertNode = function(node, before) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.surroundWithNodes = function(
     startNode, endNode) {
   var clone1 = this.range_.duplicate();
@@ -956,7 +940,7 @@ goog.dom.browserrange.IeRange.prototype.surroundWithNodes = function(
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.IeRange.prototype.collapse = function(toStart) {
   this.range_.collapse(toStart);
 

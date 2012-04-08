@@ -19,7 +19,6 @@
  * You should never need to throw goog.debug.Error(msg) directly, Error(msg) is
  * sufficient.
  *
- *
  */
 
 goog.provide('goog.debug.Error');
@@ -35,7 +34,11 @@ goog.provide('goog.debug.Error');
 goog.debug.Error = function(opt_msg) {
 
   // Ensure there is a stack trace.
-  this.stack = new Error().stack || '';
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, goog.debug.Error);
+  } else {
+    this.stack = new Error().stack || '';
+  }
 
   if (opt_msg) {
     this.message = String(opt_msg);
@@ -44,5 +47,5 @@ goog.debug.Error = function(opt_msg) {
 goog.inherits(goog.debug.Error, Error);
 
 
-/** @inheritDoc */
+/** @override */
 goog.debug.Error.prototype.name = 'CustomError';

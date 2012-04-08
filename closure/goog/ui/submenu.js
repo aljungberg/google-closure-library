@@ -16,8 +16,6 @@
  * @fileoverview A class representing menu items that open a submenu.
  * @see goog.ui.Menu
  *
- *
- *
  * @see ../demos/submenus.html
  * @see ../demos/submenus2.html
  */
@@ -61,6 +59,7 @@ goog.ui.SubMenu = function(content, opt_model, opt_domHelper, opt_renderer) {
                         opt_renderer || goog.ui.SubMenuRenderer.getInstance());
 };
 goog.inherits(goog.ui.SubMenu, goog.ui.MenuItem);
+
 
 /**
  * The delay before opening the sub menu in milliseconds.  (This number is
@@ -130,7 +129,7 @@ goog.ui.SubMenu.prototype.alignToEnd_ = true;
 goog.ui.SubMenu.prototype.isPositionAdjustable_ = false;
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.SubMenu.prototype.enterDocument = function() {
   goog.ui.SubMenu.superClass_.enterDocument.call(this);
 
@@ -143,7 +142,7 @@ goog.ui.SubMenu.prototype.enterDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.SubMenu.prototype.exitDocument = function() {
   this.getHandler().unlisten(this.getParent(), goog.ui.Component.EventType.HIDE,
       this.onParentHidden_);
@@ -160,7 +159,7 @@ goog.ui.SubMenu.prototype.exitDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.SubMenu.prototype.disposeInternal = function() {
   if (this.subMenu_ && !this.externalSubMenu_) {
     this.subMenu_.dispose();
@@ -171,7 +170,7 @@ goog.ui.SubMenu.prototype.disposeInternal = function() {
 
 
 /**
- * @inheritDoc
+ * @override
  * Dismisses the submenu on a delay, with the result that the user needs less
  * accuracy when moving to submenus.  Alternate implementations could use
  * geometry instead of a timer.
@@ -266,13 +265,12 @@ goog.ui.SubMenu.prototype.setVisible = function(visible, opt_force) {
  * @private
  */
 goog.ui.SubMenu.prototype.dismissSiblings_ = function() {
-  var items = this.getParent().getItems();
-  for (var i = 0; i < items.length; i++) {
-    if (items[i] != this && typeof items[i].dismissSubMenu == 'function') {
-      items[i].dismissSubMenu();
-      items[i].clearTimers();
+  this.getParent().forEachChild(function(child) {
+    if (child != this && typeof child.dismissSubMenu == 'function') {
+      child.dismissSubMenu();
+      child.clearTimers();
     }
-  }
+  }, this);
 };
 
 
@@ -291,7 +289,8 @@ goog.ui.SubMenu.prototype.handleKeyEvent = function(e) {
   if (!this.hasKeyboardControl_) {
     // Menu item doesn't have keyboard control and the right key was pressed.
     // So open take keyboard control and open the sub menu.
-    if (this.isEnabled() && keyCode == goog.events.KeyCodes.RIGHT) {
+    if (this.isEnabled() && (keyCode == goog.events.KeyCodes.RIGHT ||
+        keyCode == this.getMnemonic())) {
       this.showSubMenu();
       this.getMenu().highlightFirst();
       this.clearTimers();
@@ -357,7 +356,7 @@ goog.ui.SubMenu.prototype.onParentHidden_ = function(e) {
 
 
 /**
- * @inheritDoc
+ * @override
  * Sets a timer to show the submenu and then dispatches an ENTER event to the
  * parent menu.
  * @param {goog.events.BrowserEvent} e Mouse event to handle.
@@ -381,8 +380,14 @@ goog.ui.SubMenu.prototype.handleMouseOver = function(e) {
  */
 goog.ui.SubMenu.prototype.performActionInternal = function(e) {
   this.clearTimers();
-  this.showSubMenu();
-  return true;
+  var shouldHandleClick = this.isSupportedState(
+      goog.ui.Component.State.SELECTED);
+  if (shouldHandleClick) {
+    return goog.ui.SubMenu.superClass_.performActionInternal.call(this, e);
+  } else {
+    this.showSubMenu();
+    return true;
+  }
 };
 
 
@@ -403,13 +408,17 @@ goog.ui.SubMenu.prototype.setSubMenuVisible_ = function(visible) {
       if (!subMenu.isInDocument()) {
         subMenu.render();
       }
-      this.positionSubMenu_();
       subMenu.setHighlightedIndex(-1);
     }
     this.hasKeyboardControl_ = visible;
     goog.dom.classes.enable(this.getElement(),
         goog.getCssName('goog-submenu-open'), visible);
     subMenu.setVisible(visible);
+    // We must position after the menu is visible, otherwise positioning logic
+    // breaks in RTL.
+    if (visible) {
+      this.positionSubMenu_();
+    }
   }
 };
 
@@ -495,7 +504,8 @@ goog.ui.SubMenu.prototype.positionSubMenu_ = function() {
 
 /**
  * Adds a new menu item at the end of the menu.
- * @param {goog.ui.MenuItem} item Menu item to add to the menu.
+ * @param {goog.ui.MenuHeader|goog.ui.MenuItem|goog.ui.MenuSeparator} item Menu
+ *     item to add to the menu.
  */
 goog.ui.SubMenu.prototype.addItem = function(item) {
   this.getMenu().addChild(item, true);
@@ -504,7 +514,8 @@ goog.ui.SubMenu.prototype.addItem = function(item) {
 
 /**
  * Adds a new menu item at a specific index in the menu.
- * @param {goog.ui.MenuItem} item Menu item to add to the menu.
+ * @param {goog.ui.MenuHeader|goog.ui.MenuItem|goog.ui.MenuSeparator} item Menu
+ *     item to add to the menu.
  * @param {number} n Index at which to insert the menu item.
  */
 goog.ui.SubMenu.prototype.addItemAt = function(item, n) {
@@ -650,5 +661,5 @@ goog.ui.SubMenu.prototype.isPositionAdjustable = function() {
 // Register a decorator factory function for goog.ui.SubMenus.
 goog.ui.registry.setDecoratorByClassName(goog.getCssName('goog-submenu'),
     function() {
-  return new goog.ui.SubMenu(null);
-});
+      return new goog.ui.SubMenu(null);
+    });

@@ -17,8 +17,6 @@
  * @see <a href="http://www.useragentstring.com/">User agent strings</a>
  * For information on the browser brand (such as Safari versus Chrome), see
  * goog.userAgent.product.
- *
- *
  * @see ../demos/useragent.html
  */
 
@@ -56,6 +54,13 @@ goog.userAgent.ASSUME_MOBILE_WEBKIT = false;
  * @define {boolean} Whether we know at compile-time that the browser is OPERA.
  */
 goog.userAgent.ASSUME_OPERA = false;
+
+
+/**
+ * @define {boolean} Whether the {@code goog.userAgent.isVersion} function will
+ *     return true for any version.
+ */
+goog.userAgent.ASSUME_ANY_VERSION = false;
 
 
 /**
@@ -452,7 +457,8 @@ goog.userAgent.isVersionCache_ = {};
  * use the engine's version, not the browser's version number.  For example,
  * Firefox 3.0 corresponds to Gecko 1.9 and Safari 3.0 to Webkit 522.11.
  * Opera and Internet Explorer versions match the product release number.<br>
- * @see <a href="http://en.wikipedia.org/wiki/Safari_(web_browser)">Webkit</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Safari_version_history">
+ *     Webkit</a>
  * @see <a href="http://en.wikipedia.org/wiki/Gecko_engine">Gecko</a>
  *
  * @param {string|number} version The version to check.
@@ -460,7 +466,34 @@ goog.userAgent.isVersionCache_ = {};
  *     the given version.
  */
 goog.userAgent.isVersion = function(version) {
-  return goog.userAgent.isVersionCache_[version] ||
+  return goog.userAgent.ASSUME_ANY_VERSION ||
+      goog.userAgent.isVersionCache_[version] ||
       (goog.userAgent.isVersionCache_[version] =
           goog.string.compareVersions(goog.userAgent.VERSION, version) >= 0);
+};
+
+
+/**
+ * Cache for {@link goog.userAgent.isDocumentMode}.
+ * Browsers document mode version number is unlikely to change during a session
+ * we cache the results.
+ * @type {Object}
+ * @private
+ */
+goog.userAgent.isDocumentModeCache_ = {};
+
+
+/**
+ * Whether the IE effective document mode is higher or the same as the given
+ * document mode version.
+ * NOTE: Only for IE, return false for another browser.
+ *
+ * @param {number} documentMode The document mode version to check.
+ * @return {boolean} Whether the IE effective document mode is higher or the
+ *     same as the given version.
+ */
+goog.userAgent.isDocumentMode = function(documentMode) {
+  return goog.userAgent.isDocumentModeCache_[documentMode] ||
+      (goog.userAgent.isDocumentModeCache_[documentMode] = goog.userAgent.IE &&
+      !!document.documentMode && document.documentMode >= documentMode);
 };

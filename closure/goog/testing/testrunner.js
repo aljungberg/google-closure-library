@@ -28,12 +28,13 @@
  * Testing code should not have dependencies outside of goog.testing so as to
  * reduce the chance of masking missing dependencies.
  *
- *
  */
 
 goog.provide('goog.testing.TestRunner');
 
 goog.require('goog.testing.TestCase');
+
+
 
 /**
  * Construct a test runner.
@@ -366,7 +367,7 @@ goog.testing.TestRunner.prototype.writeLog = function(log) {
     try {
       div.style.whiteSpace = 'pre-wrap';
     } catch (e) {
-      // NOTE(user): IE raises an exception when assigning to pre-wrap.
+      // NOTE(brenneman): IE raises an exception when assigning to pre-wrap.
       // Thankfully, it doesn't collapse whitespace when using monospace fonts,
       // so it will display correctly if we ignore the exception.
     }

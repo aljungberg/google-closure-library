@@ -14,16 +14,18 @@
 
 /**
  * @fileoverview Number format/parse library with locale support.
- *
  */
+
 
 /**
  * Namespace for locale number format functions
  */
 goog.provide('goog.i18n.NumberFormat');
+goog.provide('goog.i18n.NumberFormat.CurrencyStyle');
+goog.provide('goog.i18n.NumberFormat.Format');
 
 goog.require('goog.i18n.NumberFormatSymbols');
-goog.require('goog.i18n.currencyCodeMap');
+goog.require('goog.i18n.currency');
 
 
 
@@ -31,21 +33,26 @@ goog.require('goog.i18n.currencyCodeMap');
  * Constructor of NumberFormat.
  * @param {number|string} pattern The number that indicates a predefined
  *     number format pattern.
- * @param {string=} opt_currency Optional international currency code. This
- *     determines the currency code/symbol used in format/parse. If not given,
- *     the currency code for current locale will be used.
+ * @param {string=} opt_currency Optional international currency
+ *     code. This determines the currency code/symbol used in format/parse. If
+ *     not given, the currency code for current locale will be used.
+ * @param {number=} opt_currencyStyle currency style, value defined in
+ *        goog.i18n.NumberFormat.CurrencyStyle.
  * @constructor
  */
-goog.i18n.NumberFormat = function(pattern, opt_currency) {
+goog.i18n.NumberFormat = function(pattern, opt_currency, opt_currencyStyle) {
   this.intlCurrencyCode_ = opt_currency ||
       goog.i18n.NumberFormatSymbols.DEF_CURRENCY_CODE;
-  this.currencySymbol_ = goog.i18n.currencyCodeMap[this.intlCurrencyCode_];
+
+  this.currencyStyle_ = opt_currencyStyle ||
+      goog.i18n.NumberFormat.CurrencyStyle.LOCAL;
 
   this.maximumIntegerDigits_ = 40;
   this.minimumIntegerDigits_ = 1;
   this.maximumFractionDigits_ = 3; // invariant, >= minFractionDigits
   this.minimumFractionDigits_ = 0;
   this.minExponentDigits_ = 0;
+  this.useSignForPositiveExponent_ = false;
 
   this.positivePrefix_ = '';
   this.positiveSuffix_ = '';
@@ -75,6 +82,44 @@ goog.i18n.NumberFormat.Format = {
   SCIENTIFIC: 2,
   PERCENT: 3,
   CURRENCY: 4
+};
+
+
+/**
+ * Currency styles.
+ * @enum {number}
+ */
+goog.i18n.NumberFormat.CurrencyStyle = {
+  LOCAL: 0,     // currency style as it is used in its circulating country.
+  PORTABLE: 1,  // currency style that differentiate it from other popular ones.
+  GLOBAL: 2     // currency style that is unique among all currencies.
+};
+
+
+/**
+ * If the usage of Ascii digits should be enforced.
+ * @type {boolean}
+ * @private
+ */
+goog.i18n.NumberFormat.enforceAsciiDigits_ = false;
+
+
+/**
+ * Set if the usage of Ascii digits in formatting should be enforced.
+ * @param {boolean} doEnforce Boolean value about if Ascii digits should be
+ *     enforced.
+ */
+goog.i18n.NumberFormat.setEnforceAsciiDigits = function(doEnforce) {
+  goog.i18n.NumberFormat.enforceAsciiDigits_ = doEnforce;
+};
+
+
+/**
+ * Return if Ascii digits is enforced.
+ * @return {boolean} If Ascii digits is enforced.
+ */
+goog.i18n.NumberFormat.isEnforceAsciiDigits = function() {
+  return goog.i18n.NumberFormat.enforceAsciiDigits_;
 };
 
 
@@ -127,7 +172,9 @@ goog.i18n.NumberFormat.prototype.applyStandardPattern_ = function(patternType) {
       this.applyPattern_(goog.i18n.NumberFormatSymbols.PERCENT_PATTERN);
       break;
     case goog.i18n.NumberFormat.Format.CURRENCY:
-      this.applyPattern_(goog.i18n.NumberFormatSymbols.CURRENCY_PATTERN);
+      this.applyPattern_(goog.i18n.currency.adjustPrecision(
+          goog.i18n.NumberFormatSymbols.CURRENCY_PATTERN,
+          this.intlCurrencyCode_));
       break;
     default:
       throw Error('Unsupported pattern type.');
@@ -303,8 +350,8 @@ goog.i18n.NumberFormat.prototype.format = function(number) {
 
     number *= this.multiplier_;
     this.useExponentialNotation_ ?
-      this.subformatExponential_(number, parts) :
-      this.subformatFixed_(number, this.minimumIntegerDigits_, parts);
+        this.subformatExponential_(number, parts) :
+        this.subformatFixed_(number, this.minimumIntegerDigits_, parts);
   }
 
   parts.push(isNegative ? this.negativeSuffix_ : this.positiveSuffix_);
@@ -326,9 +373,15 @@ goog.i18n.NumberFormat.prototype.subformatFixed_ =
     function(number, minIntDigits, parts) {
   // round the number
   var power = Math.pow(10, this.maximumFractionDigits_);
-  number = Math.round(number * power);
-  var intValue = Math.floor(number / power);
-  var fracValue = Math.floor(number - intValue * power);
+  var shiftedNumber = Math.round(number * power);
+  var intValue, fracValue;
+  if (isFinite(shiftedNumber)) {
+    intValue = Math.floor(shiftedNumber / power);
+    fracValue = Math.floor(shiftedNumber - intValue * power);
+  } else {
+    intValue = number;
+    fracValue = 0;
+  }
 
   var fractionPresent = this.minimumFractionDigits_ > 0 || fracValue > 0;
 
@@ -343,12 +396,14 @@ goog.i18n.NumberFormat.prototype.subformatFixed_ =
 
   var decimal = goog.i18n.NumberFormatSymbols.DECIMAL_SEP;
   var grouping = goog.i18n.NumberFormatSymbols.GROUP_SEP;
-  var zeroCode = goog.i18n.NumberFormatSymbols.ZERO_DIGIT.charCodeAt(0);
+  var zeroCode = goog.i18n.NumberFormat.enforceAsciiDigits_ ?
+                 48  /* ascii '0' */ :
+                 goog.i18n.NumberFormatSymbols.ZERO_DIGIT.charCodeAt(0);
   var digitLen = intPart.length;
 
   if (intValue > 0 || minIntDigits > 0) {
     for (var i = digitLen; i < minIntDigits; i++) {
-      parts.push(goog.i18n.NumberFormatSymbols.ZERO_DIGIT);
+      parts.push(String.fromCharCode(zeroCode));
     }
 
     for (var i = 0; i < digitLen; i++) {
@@ -362,7 +417,7 @@ goog.i18n.NumberFormat.prototype.subformatFixed_ =
   } else if (!fractionPresent) {
     // If there is no fraction present, and we haven't printed any
     // integer digits, then print a zero.
-    parts.push(goog.i18n.NumberFormatSymbols.ZERO_DIGIT);
+    parts.push(String.fromCharCode(zeroCode));
   }
 
   // Output the decimal separator if we always do so.
@@ -397,11 +452,15 @@ goog.i18n.NumberFormat.prototype.addExponentPart_ = function(exponent, parts) {
   if (exponent < 0) {
     exponent = -exponent;
     parts.push(goog.i18n.NumberFormatSymbols.MINUS_SIGN);
+  } else if (this.useSignForPositiveExponent_) {
+    parts.push(goog.i18n.NumberFormatSymbols.PLUS_SIGN);
   }
 
   var exponentDigits = '' + exponent;
+  var zeroChar = goog.i18n.NumberFormat.enforceAsciiDigits_ ? '0' :
+                 goog.i18n.NumberFormatSymbols.ZERO_DIGIT;
   for (var i = exponentDigits.length; i < this.minExponentDigits_; i++) {
-    parts.push(goog.i18n.NumberFormatSymbols.ZERO_DIGIT);
+    parts.push(zeroChar);
   }
   parts.push(exponentDigits);
 };
@@ -543,6 +602,14 @@ goog.i18n.NumberFormat.PATTERN_EXPONENT_ = 'E';
 
 
 /**
+ * An plus character.
+ * @type {string}
+ * @private
+ */
+goog.i18n.NumberFormat.PATTERN_PLUS_ = '+';
+
+
+/**
  * A minus character.
  * @type {string}
  * @private
@@ -611,7 +678,22 @@ goog.i18n.NumberFormat.prototype.parseAffix_ = function(pattern, pos) {
             pos[0]++;
             affix += this.intlCurrencyCode_;
           } else {
-            affix += this.currencySymbol_;
+            switch (this.currencyStyle_) {
+              case goog.i18n.NumberFormat.CurrencyStyle.LOCAL:
+                affix += goog.i18n.currency.getLocalCurrencySign(
+                    this.intlCurrencyCode_);
+                break;
+              case goog.i18n.NumberFormat.CurrencyStyle.GLOBAL:
+                affix += goog.i18n.currency.getGlobalCurrencySign(
+                    this.intlCurrencyCode_);
+                break;
+              case goog.i18n.NumberFormat.CurrencyStyle.PORTABLE:
+                affix += goog.i18n.currency.getPortableCurrencySign(
+                    this.intlCurrencyCode_);
+                break;
+              default:
+                break;
+            }
           }
           break;
         case goog.i18n.NumberFormat.PATTERN_PERCENT_:
@@ -694,6 +776,13 @@ goog.i18n.NumberFormat.prototype.parseTrunk_ = function(pattern, pos) {
         this.useExponentialNotation_ = true;
         this.minExponentDigits_ = 0;
 
+        // exponent pattern can have a optional '+'.
+        if ((pos[0] + 1) < len && pattern.charAt(pos[0] + 1) ==
+            goog.i18n.NumberFormat.PATTERN_PLUS_) {
+          pos[0]++;
+          this.useSignForPositiveExponent_ = true;
+        }
+
         // Use lookahead to parse out the exponential part
         // of the pattern, then jump into phase 2.
         while ((pos[0] + 1) < len && pattern.charAt(pos[0] + 1) ==
@@ -728,9 +817,9 @@ goog.i18n.NumberFormat.prototype.parseTrunk_ = function(pattern, pos) {
 
   // Do syntax checking on the digits.
   if (decimalPos < 0 && digitRightCount > 0 ||
-       decimalPos >= 0 && (decimalPos < digitLeftCount ||
-                           decimalPos > digitLeftCount + zeroDigitCount) ||
-       groupingCount == 0) {
+      decimalPos >= 0 && (decimalPos < digitLeftCount ||
+                          decimalPos > digitLeftCount + zeroDigitCount) ||
+      groupingCount == 0) {
     throw Error('Malformed pattern "' + pattern + '"');
   }
   var totalDigits = digitLeftCount + zeroDigitCount + digitRightCount;

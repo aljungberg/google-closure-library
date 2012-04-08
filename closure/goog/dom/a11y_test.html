@@ -3,7 +3,7 @@
 <!--
 Copyright 2008 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!--
@@ -16,8 +16,11 @@ Author:  attila@google.com (Attila Bodis)
   <script>
     goog.require('goog.dom');
     goog.require('goog.dom.a11y');
+    goog.require('goog.dom.a11y.Announcer');
+    goog.require('goog.dom.a11y.LivePriority');
     goog.require('goog.dom.a11y.Role');
     goog.require('goog.dom.a11y.State');
+    goog.require('goog.dom.iframe');
     goog.require('goog.testing.jsunit');
     goog.require('goog.userAgent');
   </script>
@@ -51,17 +54,10 @@ Author:  attila@google.com (Attila Bodis)
       goog.dom.a11y.setRole(someDiv, goog.dom.a11y.Role.MENU);
       goog.dom.a11y.setRole(someSpan, goog.dom.a11y.Role.MENU_ITEM);
 
-      if (goog.userAgent.GECKO) {
-        assertEquals('On Gecko, someDiv\'s role should be MENU',
+      assertEquals('someDiv\'s role should be MENU',
             goog.dom.a11y.Role.MENU, goog.dom.a11y.getRole(someDiv));
-        assertEquals('On Gecko, someSpan\'s role should be MENU_ITEM',
+      assertEquals('someSpan\'s role should be MENU_ITEM',
             goog.dom.a11y.Role.MENU_ITEM, goog.dom.a11y.getRole(someSpan));
-      } else {
-        assertEquals('On non-Gecko, someDiv should not have a role',
-            '', goog.dom.a11y.getRole(someDiv));
-        assertEquals('On non-Gecko, someSpan should not have a role',
-            '', goog.dom.a11y.getRole(someSpan));
-      }
     }
 
     function testGetSetState() {
@@ -71,16 +67,10 @@ Author:  attila@google.com (Attila Bodis)
       goog.dom.a11y.setState(someDiv, goog.dom.a11y.State.LABELLEDBY,
           'someSpan');
 
-      if (goog.userAgent.GECKO) {
-        assertEquals(
-            'On Gecko, someDiv\'s labelledby state should be "someSpan"',
-            'someSpan',
-            goog.dom.a11y.getState(someDiv, goog.dom.a11y.State.LABELLEDBY));
-      } else {
-        assertEquals(
-            'On non-Gecko, someDiv should not have a state', '',
-            goog.dom.a11y.getState(someDiv, goog.dom.a11y.State.LABELLEDBY));
-      }
+      assertEquals(
+          'someDiv\'s labelledby state should be "someSpan"',
+          'someSpan',
+          goog.dom.a11y.getState(someDiv, goog.dom.a11y.State.LABELLEDBY));
     }
 
     function testGetSetActiveDescendant() {
@@ -90,16 +80,60 @@ Author:  attila@google.com (Attila Bodis)
 
       goog.dom.a11y.setActiveDescendant(someDiv, someSpan);
 
-      if (goog.userAgent.GECKO) {
-        assertEquals(
-            'On Gecko, someDiv\'s active descendant should be "someSpan"',
-            someSpan,
-            goog.dom.a11y.getActiveDescendant(someDiv));
-      } else {
-        assertNull(
-            'On non-Gecko, someDiv should not have an active descendant',
-            goog.dom.a11y.getActiveDescendant(someDiv));
-      }
+      assertEquals(
+          'someDiv\'s active descendant should be "someSpan"',
+          someSpan,
+          goog.dom.a11y.getActiveDescendant(someDiv));
+    }
+
+    function testAnnouncerAndDispose() {
+      var text = 'test content';
+      var announcer = new goog.dom.a11y.Announcer(goog.dom.getDomHelper());
+      announcer.say(text);
+      checkLiveRegionContains(text, 'polite');
+      goog.dispose(announcer);
+    }
+
+    function testAnnouncerTwice() {
+      var text = 'test content1';
+      var text2 = 'test content2';
+      var announcer = new goog.dom.a11y.Announcer(goog.dom.getDomHelper());
+      announcer.say(text);
+      announcer.say(text2);
+      checkLiveRegionContains(text2, 'polite');
+      goog.dispose(announcer);
+    }
+
+    function testAnnouncerAssertive() {
+      var text = 'test content';
+      var announcer = new goog.dom.a11y.Announcer(goog.dom.getDomHelper());
+      announcer.say(text, goog.dom.a11y.LivePriority.ASSERTIVE);
+      checkLiveRegionContains(text, 'assertive');
+      goog.dispose(announcer);
+    }
+
+    function testAnnouncerInIframe() {
+      var text = 'test content';
+      var frame = goog.dom.iframe.createWithContent(sandbox);
+      var helper = goog.dom.getDomHelper(
+          goog.dom.getFrameContentDocument(frame).body);
+      var announcer = new goog.dom.a11y.Announcer(helper);
+      announcer.say(text, 'polite', helper);
+      checkLiveRegionContains(text, 'polite', helper);
+      goog.dispose(announcer);
+    }
+
+    function checkLiveRegionContains(text, priority, opt_domHelper) {
+      var dom = opt_domHelper || goog.dom.getDomHelper();
+      var divs = dom.getElementsByTagNameAndClass('div', null);
+      var liveRegions = [];
+      goog.array.forEach(divs, function(div) {
+        if (goog.dom.a11y.getState(div, 'live') == priority) {
+          liveRegions.push(div);
+        }
+      });
+      assertEquals(1, liveRegions.length);
+      assertEquals(text, goog.dom.getTextContent(liveRegions[0]));
     }
   </script>
 </body>

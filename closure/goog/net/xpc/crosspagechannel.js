@@ -16,20 +16,19 @@
  * @fileoverview Provides the class CrossPageChannel, the main class in
  * goog.net.xpc.
  *
- *
  * @see ../../demos/xpc/index.html
  */
 
 goog.provide('goog.net.xpc.CrossPageChannel');
-goog.provide('goog.net.xpc.CrossPageChannel.Role');
 
 goog.require('goog.Disposable');
 goog.require('goog.Uri');
 goog.require('goog.dom');
 goog.require('goog.events');
 goog.require('goog.json');
-goog.require('goog.messaging.MessageChannel'); // interface
+goog.require('goog.messaging.AbstractChannel');
 goog.require('goog.net.xpc');
+goog.require('goog.net.xpc.CrossPageChannelRole');
 goog.require('goog.net.xpc.FrameElementMethodTransport');
 goog.require('goog.net.xpc.IframePollingTransport');
 goog.require('goog.net.xpc.IframeRelayTransport');
@@ -45,12 +44,19 @@ goog.require('goog.userAgent');
  * Provides asynchronous messaging.
  *
  * @param {Object} cfg Channel configuration object.
+ * @param {goog.dom.DomHelper=} opt_domHelper The optional dom helper to
+ *     use for looking up elements in the dom.
  * @constructor
- * @implements {goog.messaging.MessageChannel}
- * @extends {goog.Disposable}
+ * @extends {goog.messaging.AbstractChannel}
  */
-goog.net.xpc.CrossPageChannel = function(cfg) {
-  goog.Disposable.call(this);
+goog.net.xpc.CrossPageChannel = function(cfg, opt_domHelper) {
+  goog.base(this);
+
+  for (var i = 0, uriField; uriField = goog.net.xpc.UriCfgFields[i]; i++) {
+    if (uriField in cfg && !/^https?:\/\//.test(cfg[uriField])) {
+      throw Error('URI ' + cfg[uriField] + ' is invalid for field ' + uriField);
+    }
+  }
 
   /**
    * The configuration for this channel.
@@ -68,11 +74,31 @@ goog.net.xpc.CrossPageChannel = function(cfg) {
       goog.net.xpc.getRandomString(10);
 
   /**
-   * Object holding the service callbacks.
-   * @type {Object}
+   * The dom helper to use for accessing the dom.
+   * @type {goog.dom.DomHelper}
    * @private
    */
-  this.services_ = {};
+  this.domHelper_ = opt_domHelper || goog.dom.getDomHelper();
+
+  /**
+   * Collects deferred function calls which will be made once the connection
+   * has been fully set up.
+   * @type {!Array.<function()>}
+   * @private
+   */
+  this.deferredDeliveries_ = [];
+
+  // If LOCAL_POLL_URI or PEER_POLL_URI is not available, try using
+  // robots.txt from that host.
+  cfg[goog.net.xpc.CfgFields.LOCAL_POLL_URI] =
+      cfg[goog.net.xpc.CfgFields.LOCAL_POLL_URI] ||
+      goog.uri.utils.getHost(this.domHelper_.getWindow().location.href) +
+          '/robots.txt';
+  // PEER_URI is sometimes undefined in tests.
+  cfg[goog.net.xpc.CfgFields.PEER_POLL_URI] =
+      cfg[goog.net.xpc.CfgFields.PEER_POLL_URI] ||
+      goog.uri.utils.getHost(cfg[goog.net.xpc.CfgFields.PEER_URI] || '') +
+          '/robots.txt';
 
   goog.net.xpc.channels_[this.name] = this;
 
@@ -81,7 +107,25 @@ goog.net.xpc.CrossPageChannel = function(cfg) {
 
   goog.net.xpc.logger.info('CrossPageChannel created: ' + this.name);
 };
-goog.inherits(goog.net.xpc.CrossPageChannel, goog.Disposable);
+goog.inherits(goog.net.xpc.CrossPageChannel, goog.messaging.AbstractChannel);
+
+
+/**
+ * Regexp for escaping service names.
+ * @type {RegExp}
+ * @private
+ */
+goog.net.xpc.CrossPageChannel.TRANSPORT_SERVICE_ESCAPE_RE_ =
+    new RegExp('^%*' + goog.net.xpc.TRANSPORT_SERVICE_ + '$');
+
+
+/**
+ * Regexp for unescaping service names.
+ * @type {RegExp}
+ * @private
+ */
+goog.net.xpc.CrossPageChannel.TRANSPORT_SERVICE_UNESCAPE_RE_ =
+    new RegExp('^%+' + goog.net.xpc.TRANSPORT_SERVICE_ + '$');
 
 
 /**
@@ -102,6 +146,7 @@ goog.net.xpc.CrossPageChannel.prototype.state_ =
 
 
 /**
+ * @override
  * @return {boolean} Whether the channel is connected.
  */
 goog.net.xpc.CrossPageChannel.prototype.isConnected = function() {
@@ -154,10 +199,9 @@ goog.net.xpc.CrossPageChannel.prototype.determineTransportType_ = function() {
   } else if (goog.userAgent.IE &&
              this.cfg_[goog.net.xpc.CfgFields.PEER_RELAY_URI]) {
     transportType = goog.net.xpc.TransportTypes.IFRAME_RELAY;
-  } else if (goog.userAgent.IE) {
+  } else if (goog.userAgent.IE && goog.net.xpc.NixTransport.isNixSupported()) {
     transportType = goog.net.xpc.TransportTypes.NIX;
-  } else if (this.cfg_[goog.net.xpc.CfgFields.LOCAL_POLL_URI] &&
-             this.cfg_[goog.net.xpc.CfgFields.PEER_POLL_URI]) {
+  } else {
     transportType = goog.net.xpc.TransportTypes.IFRAME_POLLING;
   }
   return transportType;
@@ -184,19 +228,23 @@ goog.net.xpc.CrossPageChannel.prototype.createTransport_ = function() {
     case goog.net.xpc.TransportTypes.NATIVE_MESSAGING:
       this.transport_ = new goog.net.xpc.NativeMessagingTransport(
           this,
-          this.cfg_[goog.net.xpc.CfgFields.PEER_HOSTNAME]);
+          this.cfg_[goog.net.xpc.CfgFields.PEER_HOSTNAME],
+          this.domHelper_);
       break;
     case goog.net.xpc.TransportTypes.NIX:
-      this.transport_ = new goog.net.xpc.NixTransport(this);
+      this.transport_ = new goog.net.xpc.NixTransport(this, this.domHelper_);
       break;
     case goog.net.xpc.TransportTypes.FRAME_ELEMENT_METHOD:
-      this.transport_ = new goog.net.xpc.FrameElementMethodTransport(this);
+      this.transport_ =
+          new goog.net.xpc.FrameElementMethodTransport(this, this.domHelper_);
       break;
     case goog.net.xpc.TransportTypes.IFRAME_RELAY:
-      this.transport_ = new goog.net.xpc.IframeRelayTransport(this);
+      this.transport_ =
+          new goog.net.xpc.IframeRelayTransport(this, this.domHelper_);
       break;
     case goog.net.xpc.TransportTypes.IFRAME_POLLING:
-      this.transport_ = new goog.net.xpc.IframePollingTransport(this);
+      this.transport_ =
+          new goog.net.xpc.IframePollingTransport(this, this.domHelper_);
       break;
   }
 
@@ -281,7 +329,7 @@ goog.net.xpc.CrossPageChannel.prototype.createPeerIframe = function(
   // TODO(user) Opera creates a history-entry when creating an iframe
   // programmatically as follows. Find a way which avoids this.
 
-  var iframeElm = goog.dom.createElement('IFRAME');
+  var iframeElm = goog.dom.getDomHelper(parentElm).createElement('IFRAME');
   iframeElm.id = iframeElm.name = iframeId;
   if (opt_configureIframeCb) {
     opt_configureIframeCb(iframeElm);
@@ -289,19 +337,7 @@ goog.net.xpc.CrossPageChannel.prototype.createPeerIframe = function(
     iframeElm.style.width = iframeElm.style.height = '100%';
   }
 
-  var peerUri = this.cfg_[goog.net.xpc.CfgFields.PEER_URI];
-  if (goog.isString(peerUri)) {
-    peerUri = this.cfg_[goog.net.xpc.CfgFields.PEER_URI] =
-        new goog.Uri(peerUri);
-  }
-
-  // Add the channel configuration used by the peer as URL parameter.
-  if (opt_addCfgParam !== false) {
-    peerUri.setParameterValue('xpc',
-                              goog.json.serialize(
-                                  this.getPeerConfiguration())
-                              );
-  }
+  var peerUri = this.getPeerUri(opt_addCfgParam);
 
   if (goog.userAgent.GECKO || goog.userAgent.WEBKIT) {
     // Appending the iframe in a timeout to avoid a weird fastback issue, which
@@ -328,6 +364,32 @@ goog.net.xpc.CrossPageChannel.prototype.createPeerIframe = function(
 
 
 /**
+ * Returns the peer URI, with an optional URL parameter for configuring the peer
+ * window.
+ *
+ * @param {boolean=} opt_addCfgParam Whether to add the peer configuration as
+ *     URL parameter (default: true).
+ * @return {!goog.Uri} The peer URI.
+ */
+goog.net.xpc.CrossPageChannel.prototype.getPeerUri = function(opt_addCfgParam) {
+  var peerUri = this.cfg_[goog.net.xpc.CfgFields.PEER_URI];
+  if (goog.isString(peerUri)) {
+    peerUri = this.cfg_[goog.net.xpc.CfgFields.PEER_URI] =
+        new goog.Uri(peerUri);
+  }
+
+  // Add the channel configuration used by the peer as URL parameter.
+  if (opt_addCfgParam !== false) {
+    peerUri.setParameterValue('xpc',
+                              goog.json.serialize(
+                                  this.getPeerConfiguration()));
+  }
+
+  return peerUri;
+};
+
+
+/**
  * Flag whether connecting should be deferred.
  * @type {boolean}
  * @private
@@ -347,6 +409,7 @@ goog.net.xpc.CrossPageChannel.prototype.connectDeferred_ = false;
  * Initiates connecting the channel. When this method is called, all the
  * information needed to connect the channel has to be available.
  *
+ * @override
  * @param {Function=} opt_connectCb The function to be called when the
  * channel has been connected and is ready to be used.
  */
@@ -358,10 +421,11 @@ goog.net.xpc.CrossPageChannel.prototype.connect = function(opt_connectCb) {
     this.connectDeferred_ = true;
     return;
   }
+  this.connectDeferred_ = false;
 
   goog.net.xpc.logger.info('connect()');
   if (this.cfg_[goog.net.xpc.CfgFields.IFRAME_ID]) {
-    this.iframeElement_ = goog.dom.getElement(
+    this.iframeElement_ = this.domHelper_.getElement(
         this.cfg_[goog.net.xpc.CfgFields.IFRAME_ID]);
   }
   if (this.iframeElement_) {
@@ -388,6 +452,11 @@ goog.net.xpc.CrossPageChannel.prototype.connect = function(opt_connectCb) {
   this.createTransport_();
 
   this.transport_.connect();
+
+  // Now we run any deferred deliveries collected while connection was deferred.
+  while (this.deferredDeliveries_.length > 0) {
+    this.deferredDeliveries_.shift()();
+  }
 };
 
 
@@ -399,6 +468,9 @@ goog.net.xpc.CrossPageChannel.prototype.close = function() {
   this.state_ = goog.net.xpc.ChannelStates.CLOSED;
   this.transport_.dispose();
   this.transport_ = null;
+  this.connectCb_ = null;
+  this.connectDeferred_ = false;
+  this.deferredDeliveries_.length = 0;
   goog.net.xpc.logger.info('Channel "' + this.name + '" closed');
 };
 
@@ -427,47 +499,7 @@ goog.net.xpc.CrossPageChannel.prototype.notifyTransportError_ = function() {
 };
 
 
-/**
- * Registers a service.
- *
- * @param {string} serviceName The name of the service.
- * @param {Function} callback The callback responsible to process incoming
- *     messages.
- * @param {boolean=} opt_jsonEncoded If true, incoming messages for this
- *     service are expected to contain a JSON-encoded object and will be
- *     deserialized automatically.
- */
-goog.net.xpc.CrossPageChannel.prototype.registerService = function(
-    serviceName, callback, opt_jsonEncoded) {
-  this.services_[serviceName] = {
-    name: serviceName,
-    callback: callback,
-    jsonEncoded: !!opt_jsonEncoded
-  };
-};
-
-
-/**
- * Registers a service to handle any messages that aren't handled by any other
- * services.
- *
- * @param {function(string, (string|Object))} callback The callback responsible
- *     for processing incoming messages that aren't processed by other services.
- */
-goog.net.xpc.CrossPageChannel.prototype.registerDefaultService = function(
-    callback) {
-  this.defaultService_ = callback;
-};
-
-
-/**
- * Sends a msg over the channel.
- *
- * @param {string} serviceName The name of the service this message
- *     should be delivered to.
- * @param {string|Object} payload The payload. If this is an object, it is
- *     serialized to JSON before sending.
- */
+/** @override */
 goog.net.xpc.CrossPageChannel.prototype.send = function(serviceName, payload) {
   if (!this.isConnected()) {
     goog.net.xpc.logger.severe('Can\'t send. Channel not connected.');
@@ -477,7 +509,13 @@ goog.net.xpc.CrossPageChannel.prototype.send = function(serviceName, payload) {
   // NOTE(user): This check is not reliable in IE, where a document in an
   // iframe does not get unloaded when removing the iframe element from the DOM.
   // TODO(user): Find something that works in IE as well.
-  if (this.peerWindowObject_.closed) {
+  // NOTE(user): "!this.peerWindowObject_.closed" evaluates to 'false' in IE9
+  // sometimes even though typeof(this.peerWindowObject_.closed) is boolean and
+  // this.peerWindowObject_.closed evaluates to 'false'. Casting it to a Boolean
+  // results in sane evaluation. When this happens, it's in the inner iframe
+  // when querying its parent's 'closed' status. Note that this is a different
+  // case than mibuerge@'s note above.
+  if (Boolean(this.peerWindowObject_.closed)) {
     goog.net.xpc.logger.severe('Peer has disappeared.');
     this.close();
     return;
@@ -485,19 +523,59 @@ goog.net.xpc.CrossPageChannel.prototype.send = function(serviceName, payload) {
   if (goog.isObject(payload)) {
     payload = goog.json.serialize(payload);
   }
-  this.transport_.send(serviceName, payload);
-};
 
+  // Partially URL-encode the service name because some characters (: and |) are
+  // used as delimiters for some transports, and we want to allow those
+  // characters in service names.
+  this.transport_.send(this.escapeServiceName_(serviceName), payload);
+};
 
 /**
  * Delivers messages to the appropriate service-handler.
  *
  * @param {string} serviceName The name of the port.
  * @param {string} payload The payload.
+ * @param {string=} opt_origin An optional origin for the message, where the
+ *     underlying transport makes that available.  If this is specified, and
+ *     the PEER_HOSTNAME parameter was provided, they must match or the message
+ *     will be rejected.
+ */
+goog.net.xpc.CrossPageChannel.prototype.safeDeliver = function(
+    serviceName, payload, opt_origin) {
+  this.deliver_(serviceName, payload, opt_origin);
+};
+
+/**
+ * Delivers messages to the appropriate service-handler.
+ *
+ * @param {string} serviceName The name of the port.
+ * @param {string} payload The payload.
+ * @param {string=} opt_origin An optional origin for the message, where the
+ *     underlying transport makes that available.  If this is specified, and
+ *     the PEER_HOSTNAME parameter was provided, they must match or the message
+ *     will be rejected.
  * @private
  */
-goog.net.xpc.CrossPageChannel.prototype.deliver_ = function(serviceName,
-                                                            payload) {
+goog.net.xpc.CrossPageChannel.prototype.deliver_ = function(
+    serviceName, payload, opt_origin) {
+
+  // This covers the very rare (but producable) case where the inner frame
+  // becomes ready and sends its setup message while the outer frame is
+  // deferring its connect method waiting for the inner frame to be ready.
+  // Without it that message can be passed to deliver_, which is unable to
+  // process it because the channel is not yet fully configured.
+  if (this.connectDeferred_) {
+    this.deferredDeliveries_.push(
+        goog.bind(this.deliver_, this, serviceName, payload, opt_origin));
+    return;
+  }
+
+  // Check whether the origin of the message is as expected.
+  if (!this.isMessageOriginAcceptable_(opt_origin)) {
+    goog.net.xpc.logger.warning('Message received from unapproved origin "' +
+        opt_origin + '" - rejected.');
+    return;
+  }
 
   if (this.isDisposed()) {
     goog.net.xpc.logger.warning('CrossPageChannel::deliver_(): Disposed.');
@@ -507,25 +585,7 @@ goog.net.xpc.CrossPageChannel.prototype.deliver_ = function(serviceName,
   } else {
     // only deliver messages if connected
     if (this.isConnected()) {
-      var service = this.services_[serviceName];
-      if (service) {
-        if (service.jsonEncoded) {
-          /** @preserveTry */
-          try {
-            payload = goog.json.parse(payload);
-          } catch (e) {
-            goog.net.xpc.logger.info('Error parsing JSON-encoded payload.');
-            return;
-          }
-        }
-        service.callback(payload);
-      } else if (this.defaultService_) {
-        this.defaultService_.callback(payload);
-      } else {
-        goog.net.xpc.logger.info('CrossPageChannel::deliver_(): ' +
-                                 'No such service: "' + serviceName + '" ' +
-                                 '(payload: ' + payload + ')');
-      }
+      this.deliver(this.unescapeServiceName_(serviceName), payload);
     } else {
       goog.net.xpc.logger.info('CrossPageChannel::deliver_(): Not connected.');
     }
@@ -534,12 +594,40 @@ goog.net.xpc.CrossPageChannel.prototype.deliver_ = function(serviceName,
 
 
 /**
- * The role of the peer.
- * @enum {number}
+ * Escape the user-provided service name for sending across the channel. This
+ * URL-encodes certain special characters so they don't conflict with delimiters
+ * used by some of the transports, and adds a special prefix if the name
+ * conflicts with the reserved transport service name.
+ *
+ * This is the opposite of {@link #unescapeServiceName_}.
+ *
+ * @param {string} name The name of the service to escape.
+ * @return {string} The escaped service name.
+ * @private
  */
-goog.net.xpc.CrossPageChannel.Role = {
-  OUTER: 0,
-  INNER: 1
+goog.net.xpc.CrossPageChannel.prototype.escapeServiceName_ = function(name) {
+  if (goog.net.xpc.CrossPageChannel.TRANSPORT_SERVICE_ESCAPE_RE_.test(name)) {
+    name = '%' + name;
+  }
+  return name.replace(/[%:|]/g, encodeURIComponent);
+};
+
+
+/**
+ * Unescape the escaped service name that was sent across the channel. This is
+ * the opposite of {@link #escapeServiceName_}.
+ *
+ * @param {string} name The name of the service to unescape.
+ * @return {string} The unescaped service name.
+ * @private
+ */
+goog.net.xpc.CrossPageChannel.prototype.unescapeServiceName_ = function(name) {
+  name = name.replace(/%[0-9a-f]{2}/gi, decodeURIComponent);
+  if (goog.net.xpc.CrossPageChannel.TRANSPORT_SERVICE_UNESCAPE_RE_.test(name)) {
+    return name.substring(1);
+  } else {
+    return name;
+  }
 };
 
 
@@ -549,23 +637,39 @@ goog.net.xpc.CrossPageChannel.Role = {
  */
 goog.net.xpc.CrossPageChannel.prototype.getRole = function() {
   return window.parent == this.peerWindowObject_ ?
-      goog.net.xpc.CrossPageChannel.Role.INNER :
-      goog.net.xpc.CrossPageChannel.Role.OUTER;
+      goog.net.xpc.CrossPageChannelRole.INNER :
+      goog.net.xpc.CrossPageChannelRole.OUTER;
 };
 
 
 /**
- * Disposes of the channel.
+ * Returns whether an incoming message with the given origin is acceptable.
+ * If an incoming request comes with a specified (non-empty) origin, and the
+ * PEER_HOSTNAME config parameter has also been provided, the two must match,
+ * or the message is unacceptable.
+ * @param {string=} opt_origin The origin associated with the incoming message.
+ * @return {boolean} Whether the message is acceptable.
+ * @private
  */
+goog.net.xpc.CrossPageChannel.prototype.isMessageOriginAcceptable_ = function(
+    opt_origin) {
+  var peerHostname = this.cfg_[goog.net.xpc.CfgFields.PEER_HOSTNAME];
+  return goog.string.isEmptySafe(opt_origin) ||
+      goog.string.isEmptySafe(peerHostname) ||
+      opt_origin == this.cfg_[goog.net.xpc.CfgFields.PEER_HOSTNAME];
+};
+
+
+/** @override */
 goog.net.xpc.CrossPageChannel.prototype.disposeInternal = function() {
-  goog.net.xpc.CrossPageChannel.superClass_.disposeInternal.call(this);
+  goog.base(this, 'disposeInternal');
 
   this.close();
 
   this.peerWindowObject_ = null;
   this.iframeElement_ = null;
-  delete this.services_;
   delete goog.net.xpc.channels_[this.name];
+  this.deferredDeliveries_.length = 0;
 };
 
 

@@ -1,4 +1,4 @@
-// Copyright 2010 Google Inc. All Rights Reserved
+// Copyright 2010 The Closure Library Authors. All Rights Reserved
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,6 @@
 
 /**
  * @fileoverview Behavior for combining two controls.
- *
  *
  * @see ../demos/split.html
  */
@@ -40,6 +39,7 @@ goog.require('goog.ui.decorate');
 goog.require('goog.ui.registry');
 
 
+
 /**
  * Creates a behavior for combining two controls. The behavior is triggered
  * by a given event type which applies the behavior handler.
@@ -59,6 +59,7 @@ goog.require('goog.ui.registry');
  */
 goog.ui.SplitBehavior = function(first, second, opt_behaviorHandler,
     opt_eventType, opt_domHelper) {
+  goog.Disposable.call(this);
 
   /**
    * @type {goog.ui.Control}
@@ -284,9 +285,7 @@ goog.ui.SplitBehavior.prototype.setActive = function(activate) {
 };
 
 
-/**
- * Disposes the behavior controls.
- */
+/** @override */
 goog.ui.SplitBehavior.prototype.disposeInternal = function() {
   this.setActive(false);
   goog.dispose(this.eventHandler_);

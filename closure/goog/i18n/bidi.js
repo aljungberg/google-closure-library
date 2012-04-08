@@ -14,8 +14,6 @@
 
 /**
  * @fileoverview Utility functions for supporting Bidi issues.
- *
- *
  */
 
 
@@ -24,6 +22,45 @@
  */
 goog.provide('goog.i18n.bidi');
 
+
+/**
+ * @define {boolean} FORCE_RTL forces the {@link goog.i18n.bidi.IS_RTL} constant
+ * to say that the current locale is a RTL locale.  This should only be used
+ * if you want to override the default behavior for deciding whether the
+ * current locale is RTL or not.
+ *
+ * {@see goog.i18n.bidi.IS_RTL}
+ */
+goog.i18n.bidi.FORCE_RTL = false;
+
+
+/**
+ * Constant that defines whether or not the current locale is a RTL locale.
+ * If {@link goog.i18n.bidi.FORCE_RTL} is not true, this constant will default
+ * to check that {@link goog.LOCALE} is one of a few major RTL locales.
+ *
+ * <p>Since this constant refers to the directionality of the locale, it is up
+ * to the caller to determine if this constant should also be used for the
+ * direction of the UI.
+ *
+ * {@see goog.LOCALE}
+ *
+ * @type {boolean}
+ *
+ * TODO(user): write a test that checks that this is a compile-time constant.
+ * For example, for the default goog.LOCALE, compiling
+ * "if (goog.i18n.bidi.IS_RTL) alert('rtl') else {}" should produce no code.
+ */
+goog.i18n.bidi.IS_RTL = goog.i18n.bidi.FORCE_RTL ||
+    (goog.LOCALE.substring(0, 2).toLowerCase() == 'ar' ||
+     goog.LOCALE.substring(0, 2).toLowerCase() == 'fa' ||
+     goog.LOCALE.substring(0, 2).toLowerCase() == 'he' ||
+     goog.LOCALE.substring(0, 2).toLowerCase() == 'iw' ||
+     goog.LOCALE.substring(0, 2).toLowerCase() == 'ur' ||
+     goog.LOCALE.substring(0, 2).toLowerCase() == 'yi') &&
+    (goog.LOCALE.length == 2 ||
+     goog.LOCALE.substring(2, 3) == '-' ||
+     goog.LOCALE.substring(2, 3) == '_');
 
 
 /**
@@ -67,6 +104,22 @@ goog.i18n.bidi.RIGHT = 'right';
  * @type {string}
  */
 goog.i18n.bidi.LEFT = 'left';
+
+
+/**
+ * 'left' if locale is RTL, 'right' if not.
+ * @type {string}
+ */
+goog.i18n.bidi.I18N_RIGHT = goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.LEFT :
+    goog.i18n.bidi.RIGHT;
+
+
+/**
+ * 'right' if locale is RTL, 'left' if not.
+ * @type {string}
+ */
+goog.i18n.bidi.I18N_LEFT = goog.i18n.bidi.IS_RTL ? goog.i18n.bidi.RIGHT :
+    goog.i18n.bidi.LEFT;
 
 
 /**

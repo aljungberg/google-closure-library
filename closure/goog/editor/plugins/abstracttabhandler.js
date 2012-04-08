@@ -17,7 +17,7 @@
  * abstract method which should be overriden to handle a tab key press.
  *
  * @author robbyw@google.com (Robby Walker)
- *
+ * @author ajp@google.com (Andy Perelson)
  */
 
 goog.provide('goog.editor.plugins.AbstractTabHandler');
@@ -39,12 +39,12 @@ goog.editor.plugins.AbstractTabHandler = function() {
 goog.inherits(goog.editor.plugins.AbstractTabHandler, goog.editor.Plugin);
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.AbstractTabHandler.prototype.getTrogClassId =
     goog.abstractMethod;
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.AbstractTabHandler.prototype.handleKeyboardShortcut =
     function(e, key, isModifierPressed) {
   // If a dialog doesn't have selectable field, Moz grabs the event and

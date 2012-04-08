@@ -17,7 +17,6 @@
  * detection. The input element directionality is automatically set according
  * to the contents (value) of the element.
  *
- *
  * @see ../demos/bidiinput.html
  */
 
@@ -29,6 +28,7 @@ goog.require('goog.events');
 goog.require('goog.events.InputHandler');
 goog.require('goog.i18n.bidi');
 goog.require('goog.ui.Component');
+
 
 
 /**
@@ -105,7 +105,8 @@ goog.ui.BidiInput.prototype.setDirection_ = function() {
   var element = this.getElement();
   var text = element.value;
   var dir = ''; // Default for no direction, inherit from document
-  if (goog.i18n.bidi.isRtlText(text) || goog.i18n.bidi.isLtrText(text)) {
+  if (goog.i18n.bidi.startsWithRtl(text) ||
+      goog.i18n.bidi.startsWithLtr(text)) {
     if (goog.i18n.bidi.detectRtlDirectionality(text)) {
       dir = 'rtl';
     } else {
@@ -153,7 +154,7 @@ goog.ui.BidiInput.prototype.getValue = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.BidiInput.prototype.disposeInternal = function() {
   if (this.inputHandler_) {
     goog.events.removeAll(this.inputHandler_);

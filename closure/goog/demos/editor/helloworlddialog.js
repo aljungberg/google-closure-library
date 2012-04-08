@@ -15,7 +15,6 @@
 /**
  * @fileoverview An example of how to write a dialog to be opened by a plugin.
  *
- *
  */
 
 goog.provide('goog.demos.editor.HelloWorldDialog');
@@ -75,7 +74,7 @@ goog.demos.editor.HelloWorldDialog.OkEvent.prototype.message;
 
 // *** Protected interface ************************************************** //
 
-/** @inheritDoc */
+/** @override */
 goog.demos.editor.HelloWorldDialog.prototype.createDialogControl = function() {
   var builder = new goog.ui.editor.AbstractDialog.Builder(this);
   /** @desc Title of the hello world dialog. */

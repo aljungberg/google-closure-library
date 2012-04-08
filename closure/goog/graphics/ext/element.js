@@ -28,6 +28,7 @@ goog.require('goog.graphics');
 goog.require('goog.graphics.ext.coordinates');
 
 
+
 /**
  * Base class for a wrapper around the goog.graphics wrapper that enables
  * more advanced functionality.
@@ -685,9 +686,7 @@ goog.graphics.ext.Element.prototype.getPixelScaleY = function() {
 // EVENT HANDLING
 
 
-/**
- * Unattaches listeners from this element.
- */
+/** @override */
 goog.graphics.ext.Element.prototype.disposeInternal = function() {
   goog.graphics.ext.Element.superClass_.disposeInternal.call();
   this.wrapper_.dispose();
@@ -708,6 +707,7 @@ goog.graphics.ext.Element.PositionType_ = {
   MIDDLE: 1,
   END: 2
 };
+
 
 
 /**

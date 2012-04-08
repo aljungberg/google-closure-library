@@ -15,7 +15,6 @@
 /**
  * @fileoverview Definition of the Tracer class and associated classes.
  *
- *
  * @see ../demos/tracer.html
  */
 
@@ -26,6 +25,7 @@ goog.require('goog.debug.Logger');
 goog.require('goog.iter');
 goog.require('goog.structs.Map');
 goog.require('goog.structs.SimplePool');
+
 
 
 /**
@@ -150,6 +150,7 @@ goog.debug.Trace_ = function() {
   this.defaultThreshold_ = 3;
 };
 
+
 /**
  * Logger for the tracer
  * @type {goog.debug.Logger}
@@ -188,6 +189,7 @@ goog.debug.Trace_.EventType = {
 };
 
 
+
 /**
  * Class to keep track of a stat of a single tracer type. Stores the count
  * and cumulative time.
@@ -216,6 +218,12 @@ goog.debug.Trace_.Stat_ = function() {
 
 
 /**
+ * @type {string|null|undefined}
+ */
+goog.debug.Trace_.Stat_.prototype.type;
+
+
+/**
  * @return {string} A string describing the tracer stat.
  */
 goog.debug.Trace_.Stat_.prototype.toString = function() {
@@ -229,6 +237,7 @@ goog.debug.Trace_.Stat_.prototype.toString = function() {
 };
 
 
+
 /**
  * Private class used to encapsulate a single event, either the start or stop
  * of a tracer.
@@ -238,6 +247,12 @@ goog.debug.Trace_.Stat_.prototype.toString = function() {
 goog.debug.Trace_.Event_ = function() {
   // the fields are different for different events - see usage in code
 };
+
+
+/**
+ * @type {string|null|undefined}
+ */
+goog.debug.Trace_.Event_.prototype.type;
 
 
 /**
@@ -311,6 +326,7 @@ goog.debug.Trace_.prototype.initCurrentTrace = function(defaultThreshold) {
   this.reset(defaultThreshold);
 };
 
+
 /**
  * Clears the current trace
  */
@@ -357,7 +373,6 @@ goog.debug.Trace_.prototype.reset = function(defaultThreshold) {
 };
 
 
-
 /**
  * Starts a tracer
  * @param {string} comment A comment used to identify the tracer. Does not
@@ -401,7 +416,7 @@ goog.debug.Trace_.prototype.startTracer = function(comment, opt_type) {
     }
   }
 
-  this.logToProfilers_('Start : ' + comment);
+  goog.debug.Logger.logToProfilers('Start : ' + comment);
 
   var event = (/** @type {goog.debug.Trace_.Event_} */
       this.eventPool_.getObject());
@@ -483,7 +498,7 @@ goog.debug.Trace_.prototype.stopTracer = function(id, opt_silenceThreshold) {
     stat.time += elapsed;
   }
   if (stopEvent) {
-    this.logToProfilers_('Stop : ' + stopEvent.comment);
+    goog.debug.Logger.logToProfilers('Stop : ' + stopEvent.comment);
 
     stopEvent.totalVarAlloc = this.getTotalVarAlloc();
 
@@ -495,6 +510,7 @@ goog.debug.Trace_.prototype.stopTracer = function(id, opt_silenceThreshold) {
   this.tracerOverheadEnd_ += tracerFinishTime - now;
   return elapsed;
 };
+
 
 /**
  * Sets the ActiveX object that can be used to get GC tracing in IE6.
@@ -590,6 +606,7 @@ goog.debug.Trace_.prototype.getStat_ = function(type) {
   return /** @type {goog.debug.Trace_.Stat_} */(stat);
 };
 
+
 /**
  * Returns a formatted string for the current trace
  * @return {string} A formatted string that shows the timings of the current
@@ -652,47 +669,6 @@ goog.debug.Trace_.prototype.toString = function() {
 
 
 /**
- * Logs the trace event to profiling tools.
- * @param {string} msg The message to log.
- * @private
- */
-goog.debug.Trace_.prototype.logToProfilers_ = function(msg) {
-  this.logToSpeedTracer_(msg);
-  this.logToMsProfiler_(msg);
-};
-
-
-/**
- * Logs the trace event to speed tracer, if it is available.
- * {@see http://code.google.com/webtoolkit/speedtracer/logging-api.html}
- * @param {string} msg The message to log.
- * @private
- */
-goog.debug.Trace_.prototype.logToSpeedTracer_ = function(msg) {
-  // Use goog.global because Tracers are used in contexts that may not have a
-  // window.
-  if (goog.global['console'] && goog.global['console']['markTimeline']) {
-    goog.global['console']['markTimeline'](msg);
-  }
-};
-
-
-/**
- * Logs the trace event to the Microsoft Profiler.
- * {@see http://msdn.microsoft.com/en-us/library/dd433074(VS.85).aspx}
- * @param {string} msg The message to log.
- * @private
- */
-goog.debug.Trace_.prototype.logToMsProfiler_ = function(msg) {
-  // Use goog.global because Tracers are used in contexts that may not have a
-  // window.
-  if (goog.global['msWriteProfilerMark']) {
-    goog.global['msWriteProfilerMark'](msg);
-  }
-};
-
-
-/**
  * Converts 'v' to a string and pads it with up to 3 spaces for
  * improved alignment. TODO there must be a better way
  * @param {number} v A number.
@@ -708,6 +684,7 @@ goog.debug.Trace_.longToPaddedString_ = function(v) {
   if (v < 10) space = '   ';
   return space + v;
 };
+
 
 /**
  * Return the sec.ms part of time (if time = "20:06:11.566",  "11.566

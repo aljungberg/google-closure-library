@@ -16,8 +16,8 @@
 /**
  * @fileoverview Thin wrappers around the DOM element returned from
  * the different draw methods of the graphics. This is the SVG implementation.
- *
- *
+ * @author arv@google.com (Erik Arvidsson)
+ * @author yoah@google.com (Yoah Bar-David)
  */
 
 goog.provide('goog.graphics.SvgEllipseElement');
@@ -35,6 +35,7 @@ goog.require('goog.graphics.ImageElement');
 goog.require('goog.graphics.PathElement');
 goog.require('goog.graphics.RectElement');
 goog.require('goog.graphics.TextElement');
+
 
 
 /**
@@ -72,6 +73,7 @@ goog.graphics.SvgGroupElement.prototype.setSize = function(width, height) {
 };
 
 
+
 /**
  * Thin wrapper for SVG ellipse elements.
  * This is an implementation of the goog.graphics.EllipseElement interface.
@@ -102,7 +104,6 @@ goog.graphics.SvgEllipseElement.prototype.setCenter = function(cx, cy) {
 };
 
 
-
 /**
  * Update the radius of the ellipse.
  * @param {number} rx Radius length for the x-axis.
@@ -112,6 +113,7 @@ goog.graphics.SvgEllipseElement.prototype.setRadius = function(rx, ry) {
   this.getGraphics().setElementAttributes(this.getElement(),
       {'rx': rx, 'ry': ry});
 };
+
 
 
 /**
@@ -154,6 +156,7 @@ goog.graphics.SvgRectElement.prototype.setSize = function(width, height) {
 };
 
 
+
 /**
  * Thin wrapper for SVG path elements.
  * This is an implementation of the goog.graphics.PathElement interface.
@@ -183,6 +186,7 @@ goog.graphics.SvgPathElement.prototype.setPath = function(path) {
 };
 
 
+
 /**
  * Thin wrapper for SVG text elements.
  * This is an implementation of the goog.graphics.TextElement interface.
@@ -209,6 +213,8 @@ goog.inherits(goog.graphics.SvgTextElement, goog.graphics.TextElement);
 goog.graphics.SvgTextElement.prototype.setText = function(text) {
   this.getElement().firstChild.data = text;
 };
+
+
 
 /**
  * Thin wrapper for SVG image elements.

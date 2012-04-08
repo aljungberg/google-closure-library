@@ -27,6 +27,7 @@ goog.provide('goog.dom.browserrange.GeckoRange');
 goog.require('goog.dom.browserrange.W3cRange');
 
 
+
 /**
  * The constructor for Gecko specific browser ranges.
  * @param {Range} range The range object.
@@ -66,7 +67,7 @@ goog.dom.browserrange.GeckoRange.createFromNodes = function(startNode,
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.dom.browserrange.GeckoRange.prototype.selectInternal = function(
     selection, reversed) {
   var anchorNode = reversed ? this.getEndNode() : this.getStartNode();

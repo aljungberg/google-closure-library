@@ -40,7 +40,6 @@
  * Children normally render into the document lazily, at the first
  * moment when all ancestors are expanded.
  *
- *
  * @see ../demos/drilldownrow.html
  */
 
@@ -65,6 +64,7 @@ goog.require('goog.dom');
 goog.require('goog.dom.classes');
 goog.require('goog.events');
 goog.require('goog.ui.Component');
+
 
 
 /**
@@ -162,6 +162,7 @@ goog.ui.DrilldownRow.sampleProperties = {
 // Implementations of Component methods.
 //
 
+
 /**
  * The base class method calls its superclass method and this
  * drilldown's 'decorator' method as defined in the constructor.
@@ -172,7 +173,7 @@ goog.ui.DrilldownRow.prototype.enterDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.DrilldownRow.prototype.createDom = function() {
   this.setElementInternal(goog.ui.DrilldownRow.createRowNode_(
       this.html_, this.getDomHelper().getDocument()));
@@ -206,14 +207,14 @@ goog.ui.DrilldownRow.prototype.addChildAt = function(child, index, opt_render) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.DrilldownRow.prototype.removeChild = function(child) {
   goog.dom.removeNode(child.getElement());
-  goog.ui.DrilldownRow.superClass_.removeChild.call(this, child);
+  return goog.ui.DrilldownRow.superClass_.removeChild.call(this, child);
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.DrilldownRow.prototype.disposeInternal = function() {
   delete this.html_;
   this.children_ = null;
@@ -274,11 +275,7 @@ goog.ui.DrilldownRow.prototype.findIndex = function() {
   if (!parent) {
     throw Error('Component has no parent');
   }
-  for (var i = 0; i < parent.getChildCount(); i++) {
-    if (parent.getChildAt(i) == this) {
-      return i;
-    }
-  }
+  return parent.indexOfChild(this);
 };
 
 
@@ -382,6 +379,7 @@ goog.ui.DrilldownRow.decorate = function(selfObj) {
 //
 // Private methods
 //
+
 
 /**
  * Turn display of a DrilldownRow on or off.  If the DrilldownRow has not

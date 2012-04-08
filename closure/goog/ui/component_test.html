@@ -3,12 +3,10 @@
 <!--
 Copyright 2007 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!--
-Author: pupius@google.com (Daniel Pupius)
-Author: attila@google.com (Attila Bodis)
 -->
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -19,7 +17,7 @@ Author: attila@google.com (Attila Bodis)
     goog.require('goog.dom.DomHelper');
     goog.require('goog.dom.NodeType');
     goog.require('goog.dom.TagName');
-    goog.require('goog.string.StringBuffer');
+    goog.require('goog.events.EventTarget');
     goog.require('goog.testing.PropertyReplacer');
     goog.require('goog.testing.jsunit');
     goog.require('goog.ui.Component');
@@ -313,6 +311,34 @@ Author: attila@google.com (Attila Bodis)
           component.getElement());
     }
 
+    function testGetElementAndGetElementsByClass() {
+      sandbox.innerHTML =
+        '<ul id="task-list">' +
+          '<li class="task">Unclog drain' +
+        '</ul>' +
+        '<ul id="completed-tasks">' +
+          '<li id="groceries" class="task">Buy groceries' +
+          '<li class="task">Rotate tires' +
+          '<li class="task">Clean kitchen' +
+        '</ul>' +
+      assertNull(
+          'Should be nothing to return before the component has a DOM',
+          component.getElementByClass('task'));
+      assertEquals('Should return an empty list before the component has a DOM',
+                   0,
+                   component.getElementsByClass('task').length);
+
+      component.decorate(goog.dom.getElement('completed-tasks'));
+      assertEquals(
+          'getElementByClass() should return the first completed task',
+          'groceries',
+          component.getElementByClass('task').id);
+      assertEquals(
+          'getElementsByClass() should return only the completed tasks',
+          3,
+          component.getElementsByClass('task').length);
+    }
+
     function testEnterExitDocument() {
       var c1 = new goog.ui.Component();
       var c2 = new goog.ui.Component();
@@ -415,6 +441,18 @@ Author: attila@google.com (Attila Bodis)
           component.getId() + '.foo', component.makeId('foo'));
       assertEquals('Fragment must have expected value', 'foo',
           component.getFragmentFromId(component.makeId('foo')));
+    }
+
+    function testMakeIdsWithObject() {
+      var EnumDef = {
+        ENUM_1: 'enum 1',
+        ENUM_2: 'enum 2',
+        ENUM_3: 'enum 3'
+      };
+      var ids = component.makeIds(EnumDef);
+      assertEquals(component.makeId(EnumDef.ENUM_1), ids.ENUM_1);
+      assertEquals(component.makeId(EnumDef.ENUM_2), ids.ENUM_2);
+      assertEquals(component.makeId(EnumDef.ENUM_3), ids.ENUM_3);
     }
 
     function testGetElementByFragment() {
@@ -613,16 +651,12 @@ Author: attila@google.com (Attila Bodis)
       component.addChild(new goog.ui.Component());
       component.addChild(new goog.ui.Component());
       component.addChild(new goog.ui.Component());
-      var sb = new goog.string.StringBuffer();
+      var callCount = 0;
       component.forEachChild(function(child, index) {
-        // Note: This is just to test that 'this' is set correctly.
-        var count = this.getChildCount();
-        sb.append(index + 1).append(' of ').append(count);
-        if (index < count - 1) {
-          sb.append(', ');
-        }
+        assertEquals(component, this);
+        callCount++;
       }, component);
-      assertEquals('1 of 3, 2 of 3, 3 of 3', sb.toString());
+      assertEquals(3, callCount);
     }
 
     function testIndexOfChild() {
@@ -719,6 +753,49 @@ Author: attila@google.com (Attila Bodis)
       assertEquals('adcb', component.getChildIds().join(''));
       assertEquals(a, component.getChildAt(0));
       assertEquals(a.getElement(), component.getElement().childNodes[0]);
+    }
+
+    function testRemoveChildren() {
+      var a = new goog.ui.Component();
+      var b = new goog.ui.Component();
+      var c = new goog.ui.Component();
+
+      component.addChild(a);
+      component.addChild(b);
+      component.addChild(c);
+
+      a.setId('a');
+      b.setId('b');
+      c.setId('c');
+
+      assertArrayEquals('Parent must remove and return children.', [a, b, c],
+          component.removeChildren());
+      assertNull('Parent must no longer contain this child',
+          component.getChild('a'));
+      assertNull('Parent must no longer contain this child',
+          component.getChild('b'));
+      assertNull('Parent must no longer contain this child',
+          component.getChild('c'));
+    }
+
+    function testRemoveChildren_Unrender() {
+      var a = new goog.ui.Component();
+      var b = new goog.ui.Component();
+
+      component.render(sandbox);
+      component.addChild(a);
+      component.addChild(b);
+
+      assertArrayEquals('Prent must remove and return children.', [a, b],
+          component.removeChildren(true));
+      assertNull('Parent must no longer contain this child',
+          component.getChild('a'));
+      assertFalse('Child must no longer be in the document.',
+          a.isInDocument());
+      assertNull('Parent must no longer contain this child',
+          component.getChild('b'));
+      assertFalse('Child must no longer be in the document.',
+          b.isInDocument());
     }
   </script>
 </body>

@@ -16,9 +16,6 @@
  * @fileoverview Utilties for working with DOM nodes related to rich text
  * editing.  Many of these are not general enough to go into goog.dom.
  *
- *
- *
- * @author nicksantos@google.com (Nick Santos)
  */
 
 goog.provide('goog.editor.node');
@@ -215,6 +212,7 @@ goog.editor.node.isAllNonNbspWhiteSpace = function(textNode) {
   return goog.string.isBreakingWhitespace(textNode.nodeValue);
 };
 
+
 /**
  * Returns true if the node contains only whitespace and is not and does not
  * contain any images, iframes or embed tags.
@@ -235,28 +233,6 @@ goog.editor.node.isEmpty = function(node, opt_prohibitSingleNbsp) {
   }
   return (!opt_prohibitSingleNbsp && nodeData == goog.string.Unicode.NBSP) ||
       goog.string.isBreakingWhitespace(nodeData);
-};
-
-
-/**
- * Determines the active element in the given document.  IE only.
- * @param {Document} doc The document to look in.
- * @return {Element} The active element in IE.
- */
-goog.editor.node.getActiveElementIE = function(doc) {
-  try {
-    return doc.activeElement;
-  } catch (e) {
-    // NOTE(nicksantos): Sometimes, evaluating document.activeElement in IE
-    // throws an exception. I'm not 100% sure why, but I suspect it chokes
-    // on document.activeElement if the activeElement has been recently
-    // removed from the DOM by a JS operation.
-    //
-    // We assume that an exception here simply means
-    // "there is no active element."
-  }
-
-  return null;
 };
 
 
@@ -289,6 +265,7 @@ goog.editor.node.findInChildren = function(parent, hasProperty) {
   return null;
 };
 
+
 /**
  * Search ancestor nodes using a predicate function and returns the topmost
  * ancestor in the chain of consecutive ancestors that satisfies the condition.
@@ -308,6 +285,7 @@ goog.editor.node.findHighestMatchingAncestor = function(node, hasProperty) {
   }
   return ancestor;
 };
+
 
 /**
 * Checks if node is a block-level html element. The <tt>display</tt> css

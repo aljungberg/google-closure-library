@@ -15,8 +15,6 @@
 /**
  * @fileoverview Definition of the Popup class.
  *
- *
- *
  * @see ../demos/popup.html
  */
 
@@ -215,7 +213,7 @@ goog.ui.Popup.prototype.reposition = function() {
   this.position_.reposition(el, this.popupCorner_, this.margin_);
 
   if (hideForPositioning) {
-    // NOTE(user): The visibility property is reset to 'visible' by the show_
+    // NOTE(eae): The visibility property is reset to 'visible' by the show_
     // method in PopupBase. Resetting it here causes flickering in some
     // situations, even if set to visible after the display property has been
     // set to none by the call below.
@@ -265,7 +263,6 @@ goog.ui.Popup.positionPopup = function(anchorElement, anchorElementCorner,
 };
 
 
-
 /**
  * Positions the specified corner of the movable element at the
  * specified coordinate.
@@ -311,6 +308,7 @@ goog.ui.Popup.positionAtCoordinate = function(absolutePos, movableElement,
 goog.ui.Popup.AnchoredPosition = goog.positioning.AnchoredPosition;
 
 
+
 /**
  * Encapsulates a popup position where the popup is anchored at a corner of
  * an element. The corners are swapped if dictated by the viewport. For instance
@@ -338,6 +336,7 @@ goog.ui.Popup.AnchoredViewPortPosition =
     goog.positioning.AnchoredViewportPosition;
 
 
+
 /**
  * Encapsulates a popup position where the popup absolutely positioned by
  * setting the left/top style elements directly to the specified values.
@@ -354,6 +353,7 @@ goog.ui.Popup.AnchoredViewPortPosition =
  *     will be removed at the end of Q1 2009.
  */
 goog.ui.Popup.AbsolutePosition = goog.positioning.AbsolutePosition;
+
 
 
 /**
@@ -373,6 +373,7 @@ goog.ui.Popup.AbsolutePosition = goog.positioning.AbsolutePosition;
 goog.ui.Popup.ViewPortPosition = goog.positioning.ViewportPosition;
 
 
+
 /**
  * Encapsulates a popup position where the popup is positioned relative to the
  * window (client) coordinates. This calculates the correct position to
@@ -390,6 +391,7 @@ goog.ui.Popup.ViewPortPosition = goog.positioning.ViewportPosition;
  *     will be removed at the end of Q1 2009.
  */
 goog.ui.Popup.ClientPosition = goog.positioning.ClientPosition;
+
 
 
 /**

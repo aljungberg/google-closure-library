@@ -15,7 +15,7 @@
 
 /**
  * @fileoverview Graphics utility functions and factory methods.
- *
+ * @author arv@google.com (Erik Arvidsson)
  */
 
 
@@ -26,6 +26,7 @@ goog.require('goog.math.Coordinate');
 goog.require('goog.math.Size');
 goog.require('goog.style');
 goog.require('goog.ui.Component');
+
 
 
 /**

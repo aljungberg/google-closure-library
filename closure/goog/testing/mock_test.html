@@ -3,7 +3,7 @@
 <!--
 Copyright 2008 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <head>
@@ -90,6 +90,11 @@ See the COPYING file for details.
     assertTrue(mock.$verifyCall(expectation, 'a', [new RealObject()]));
   }
 
+  function testVerifyArgumentListForObjectMethods() {
+    var expectation = new goog.testing.MockExpectation('toString');
+    expectation.argumentList = []
+    assertTrue(mock.$verifyCall(expectation, 'toString', []));
+  }
 
   function testRegisterArgumentListVerifier() {
     var expectationA = new goog.testing.MockExpectation('a');

@@ -15,7 +15,6 @@
 /**
  * @fileoverview Class that retrieves autocomplete matches via an ajax call.
  *
- *
  */
 
 goog.provide('goog.ui.AutoComplete.RemoteArrayMatcher');
@@ -41,6 +40,8 @@ goog.require('goog.ui.AutoComplete');
  * @extends {goog.Disposable}
  */
 goog.ui.AutoComplete.RemoteArrayMatcher = function(url, opt_noSimilar) {
+  goog.Disposable.call(this);
+
   /**
    * The base URL for the ajax call.  The token and max_matches are added as
    * query params.
@@ -264,7 +265,7 @@ goog.ui.AutoComplete.RemoteArrayMatcher.prototype.requestMatchingRows =
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.AutoComplete.RemoteArrayMatcher.prototype.disposeInternal = function() {
   this.xhr_.dispose();
   goog.ui.AutoComplete.RemoteArrayMatcher.superClass_.disposeInternal.call(

@@ -16,8 +16,8 @@
  * @fileoverview Renderer for {@link goog.ui.style.app.MenuButton}s and
  * subclasses.
  *
- *
- *
+ * @author attila@google.com (Attila Bodis)
+ * @author gveen@google.com (Greg Veen)
  */
 
 goog.provide('goog.ui.style.app.MenuButtonRenderer');
@@ -30,6 +30,7 @@ goog.require('goog.ui.ControlContent');
 goog.require('goog.ui.Menu');
 goog.require('goog.ui.MenuRenderer');
 goog.require('goog.ui.style.app.ButtonRenderer');
+
 
 
 /**
@@ -52,7 +53,8 @@ goog.addSingletonGetter(goog.ui.style.app.MenuButtonRenderer);
  * by this renderer.
  * @type {string}
  */
-goog.ui.style.app.MenuButtonRenderer.CSS_CLASS = 'goog-menu-button';
+goog.ui.style.app.MenuButtonRenderer.CSS_CLASS =
+    goog.getCssName('goog-menu-button');
 
 
 /**
@@ -62,13 +64,27 @@ goog.ui.style.app.MenuButtonRenderer.CSS_CLASS = 'goog-menu-button';
  * @type {Array.<Array.<string>>}
  */
 goog.ui.style.app.MenuButtonRenderer.IE6_CLASS_COMBINATIONS = [
-  ['goog-button-base-rtl', 'goog-menu-button'],
-  ['goog-button-base-hover', 'goog-menu-button'],
-  ['goog-button-base-focused', 'goog-menu-button'],
-  ['goog-button-base-disabled', 'goog-menu-button'],
-  ['goog-button-base-active', 'goog-menu-button'],
-  ['goog-button-base-open', 'goog-menu-button'],
-  ['goog-button-base-active', 'goog-button-base-open', 'goog-menu-button']
+  [goog.getCssName('goog-button-base-rtl'),
+   goog.getCssName('goog-menu-button')],
+
+  [goog.getCssName('goog-button-base-hover'),
+   goog.getCssName('goog-menu-button')],
+
+  [goog.getCssName('goog-button-base-focused'),
+   goog.getCssName('goog-menu-button')],
+
+  [goog.getCssName('goog-button-base-disabled'),
+   goog.getCssName('goog-menu-button')],
+
+  [goog.getCssName('goog-button-base-active'),
+   goog.getCssName('goog-menu-button')],
+
+  [goog.getCssName('goog-button-base-open'),
+   goog.getCssName('goog-menu-button')],
+
+  [goog.getCssName('goog-button-base-active'),
+   goog.getCssName('goog-button-base-open'),
+   goog.getCssName('goog-menu-button')]
 ];
 
 
@@ -113,7 +129,7 @@ goog.ui.style.app.MenuButtonRenderer.prototype.getContentElement =
  */
 goog.ui.style.app.MenuButtonRenderer.prototype.decorate = function(button,
     element) {
-  // TODO(user):  Add more robust support for subclasses of goog.ui.Menu.
+  // TODO(attila):  Add more robust support for subclasses of goog.ui.Menu.
   var menuElem = goog.dom.getElementsByTagNameAndClass(
       '*', goog.ui.MenuRenderer.CSS_CLASS, element)[0];
   if (menuElem) {
@@ -162,7 +178,7 @@ goog.ui.style.app.MenuButtonRenderer.prototype.createButton = function(content,
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.style.app.MenuButtonRenderer.prototype.setContent = function(element,
     content) {
   var dom = goog.dom.getDomHelper(this.getContentElement(element));
@@ -192,7 +208,7 @@ goog.ui.style.app.MenuButtonRenderer.prototype.createContentWithDropdown =
  * @return {Element} Dropdown element.
  */
 goog.ui.style.app.MenuButtonRenderer.prototype.createDropdown = function(dom) {
-  return dom.createDom('div', this.getCssClass() + '-dropdown');
+  return dom.createDom('div', goog.getCssName(this.getCssClass(), 'dropdown'));
 };
 
 
@@ -206,7 +222,7 @@ goog.ui.style.app.MenuButtonRenderer.prototype.getCssClass = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.style.app.MenuButtonRenderer.prototype.getIe6ClassCombinations =
     function() {
   return goog.ui.style.app.MenuButtonRenderer.IE6_CLASS_COMBINATIONS;

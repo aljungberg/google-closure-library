@@ -56,7 +56,6 @@
  *
  * @see.goog.async.Deferred
  * @see goog.testing.AsyncTestCase
- *
  */
 
 goog.provide('goog.testing.DeferredTestCase');
@@ -87,7 +86,7 @@ goog.inherits(goog.testing.DeferredTestCase, goog.testing.AsyncTestCase);
  */
 goog.testing.DeferredTestCase.createAndInstall = function(opt_name) {
   var deferredTestCase = new goog.testing.DeferredTestCase(opt_name);
-  goog.testing.AsyncTestCase.initializeTestRunner(deferredTestCase, opt_name);
+  goog.testing.TestCase.initializeTestRunner(deferredTestCase);
   return deferredTestCase;
 };
 
@@ -147,11 +146,9 @@ goog.testing.DeferredTestCase.prototype.waitForDeferred = function(a, opt_b) {
     default: // Shouldn't be here in compiled mode
       throw Error('Invalid number of arguments');
   }
-
   deferred.addCallbacks(this.onSuccess, this.onError, this);
   if (!waitMsg) {
-    waitMsg =
-        'Waiting for deferred in ' + this.activeTest.name;
+    waitMsg = 'Waiting for deferred in ' + this.getCurrentStepName();
   }
   this.waitForAsync( /** @type {!string} */ (waitMsg));
   deferred.callback(true);

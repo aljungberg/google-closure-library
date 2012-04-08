@@ -21,8 +21,8 @@
  * Based on the Custom Buttons 3.1 visual specification, see
  * http://go/custombuttons
  *
- *
- *
+ * @author eae@google.com (Emil A Eklund)
+ * @author dalewis@google.com (Darren Lewis)
  * @see ../demos/imagelessmenubutton.html
  */
 
@@ -37,6 +37,7 @@ goog.require('goog.ui.MenuButtonRenderer');
 goog.require('goog.ui.registry');
 
 
+
 /**
  * Custom renderer for {@link goog.ui.MenuButton}s. Imageless buttons can
  * contain almost arbitrary HTML content, will flow like inline elements, but
@@ -49,6 +50,7 @@ goog.ui.ImagelessMenuButtonRenderer = function() {
   goog.ui.MenuButtonRenderer.call(this);
 };
 goog.inherits(goog.ui.ImagelessMenuButtonRenderer, goog.ui.MenuButtonRenderer);
+
 
 /**
  * The singleton instance of this renderer class.
@@ -68,7 +70,7 @@ goog.ui.ImagelessMenuButtonRenderer.CSS_CLASS =
     goog.getCssName('goog-imageless-button');
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.ImagelessMenuButtonRenderer.prototype.getContentElement = function(
     element) {
   if (element) {

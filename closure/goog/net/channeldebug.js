@@ -17,8 +17,8 @@
  * a utility for tracing and debugging the BrowserChannel requests.
  *
  * TODO(user) - allow client to specify a custom redaction policy
- *
  */
+
 
 /**
  * Namespace for BrowserChannel
@@ -26,6 +26,7 @@
 goog.provide('goog.net.ChannelDebug');
 goog.require('goog.debug.Logger');
 goog.require('goog.json');
+
 
 
 /**
@@ -49,6 +50,15 @@ goog.net.ChannelDebug = function() {
  */
 goog.net.ChannelDebug.prototype.getLogger = function() {
   return this.logger_;
+};
+
+
+/**
+ * Logs that the browser went offline during the lifetime of a request.
+ * @param {goog.Uri} url The URL being requested.
+ */
+goog.net.ChannelDebug.prototype.browserOfflineResponse = function(url) {
+  this.info('BROWSER_OFFLINE: ' + url);
 };
 
 
@@ -209,8 +219,8 @@ goog.net.ChannelDebug.prototype.redactResponse_ = function(responseText) {
       responseText == goog.net.BrowserChannel.MAGIC_RESPONSE_COOKIE) {
     return responseText;
   }
+  /** @preserveTry */
   try {
-    /** @preserveTry */
     var responseArray = goog.json.unsafeParse(responseText);
 
     for (var i = 0; i < responseArray.length; i++) {
@@ -221,8 +231,7 @@ goog.net.ChannelDebug.prototype.redactResponse_ = function(responseText) {
 
     return goog.json.serialize(responseArray);
   } catch (e) {
-    this.debug('Exception parsing expected JS array - ' +
-                                'probably was not JS');
+    this.debug('Exception parsing expected JS array - probably was not JS');
     return responseText;
   }
 };
@@ -246,7 +255,7 @@ goog.net.ChannelDebug.prototype.maybeRedactArray_ = function(array) {
   }
 
   var type = dataPart[0];
-  if (type != 'c' && type != 'noop' && type != 'stop') {
+  if (type != 'noop' && type != 'stop') {
     // redact all fields in the array
     for (var i = 1; i < dataPart.length; i++) {
       dataPart[i] = '';

@@ -17,7 +17,6 @@
  * detailed information such as a progress bar the indicates the status of
  * syncing and allows you to perform actions (such as manually go offline).
  *
- *
  * @see ../demos/offline.html
  */
 
@@ -32,6 +31,7 @@ goog.require('goog.style');
 goog.require('goog.ui.Component');
 goog.require('goog.ui.Component.EventType');
 goog.require('goog.ui.ProgressBar');
+
 
 
 /**
@@ -288,7 +288,7 @@ goog.ui.OfflineStatusCard.prototype.createDom = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.OfflineStatusCard.prototype.enterDocument = function() {
   goog.ui.OfflineStatusCard.superClass_.enterDocument.call(this);
 
@@ -562,7 +562,7 @@ goog.ui.OfflineStatusCard.prototype.getAdditionalMessage = function(status) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.OfflineStatusCard.prototype.disposeInternal = function() {
   goog.ui.OfflineStatusCard.superClass_.disposeInternal.call(this);
 

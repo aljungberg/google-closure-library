@@ -3,7 +3,7 @@
 <!--
 Copyright 2008 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!-- Author:  attila@google.com (Attila Bodis) -->
@@ -136,7 +136,7 @@ See the COPYING file for details.
       assertEquals('TABLE', table.tagName);
       assertEquals('goog-palette-table', table.className);
 
-      // TODO(user):  Each ColorPalette creates 12 listeners (13 on IE)!
+      // TODO(attila):  Each ColorPalette creates 12 listeners (13 on IE)!
       assertEquals(goog.userAgent.IE ? 13 : 12,
           goog.events.getTotalListenerCount());
     }

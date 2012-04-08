@@ -15,7 +15,6 @@
 /**
  * @fileoverview Deprecated button class; use {@link goog.ui.Button} instead.
  *
- *
  */
 
 goog.provide('goog.ui.DeprecatedButton');
@@ -25,6 +24,8 @@ goog.require('goog.events');
 goog.require('goog.events.Event');
 goog.require('goog.events.EventTarget');
 goog.require('goog.events.EventType');
+
+
 
 /**
  * Default implementation of a button. Uses the default browser-style button.
@@ -358,7 +359,7 @@ goog.ui.DeprecatedButton.prototype.onClick_ = function(e) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.DeprecatedButton.prototype.disposeInternal = function() {
   goog.ui.DeprecatedButton.superClass_.disposeInternal.call(this);
 

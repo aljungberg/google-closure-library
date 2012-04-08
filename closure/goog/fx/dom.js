@@ -15,7 +15,6 @@
 /**
  * @fileoverview Predefined DHTML animations such as slide, resize and fade.
  *
- *
  * @see ../demos/effects.html
  */
 
@@ -39,8 +38,9 @@ goog.provide('goog.fx.dom.Swipe');
 goog.require('goog.color');
 goog.require('goog.events');
 goog.require('goog.fx.Animation');
-goog.require('goog.fx.Animation.EventType');
+goog.require('goog.fx.Transition.EventType');
 goog.require('goog.style');
+
 
 
 /**
@@ -74,21 +74,21 @@ goog.inherits(goog.fx.dom.PredefinedEffect, goog.fx.Animation);
 goog.fx.dom.PredefinedEffect.prototype.updateStyle = goog.nullFunction;
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.PredefinedEffect.prototype.onAnimate = function() {
   this.updateStyle();
   goog.fx.dom.PredefinedEffect.superClass_.onAnimate.call(this);
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.PredefinedEffect.prototype.onEnd = function() {
   this.updateStyle();
   goog.fx.dom.PredefinedEffect.superClass_.onEnd.call(this);
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.PredefinedEffect.prototype.onBegin = function() {
   this.updateStyle();
   goog.fx.dom.PredefinedEffect.superClass_.onBegin.call(this);
@@ -119,7 +119,7 @@ goog.fx.dom.Slide = function(element, start, end, time, opt_acc) {
 goog.inherits(goog.fx.dom.Slide, goog.fx.dom.PredefinedEffect);
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.Slide.prototype.updateStyle = function() {
   this.element.style.left = Math.round(this.coords[0]) + 'px';
   this.element.style.top = Math.round(this.coords[1]) + 'px';
@@ -144,7 +144,7 @@ goog.fx.dom.SlideFrom = function(element, end, time, opt_acc) {
 goog.inherits(goog.fx.dom.SlideFrom, goog.fx.dom.Slide);
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.SlideFrom.prototype.onBegin = function() {
   this.startPoint = [this.element.offsetLeft, this.element.offsetTop];
   goog.fx.dom.SlideFrom.superClass_.onBegin.call(this);
@@ -435,6 +435,7 @@ goog.fx.dom.FadeIn = function(element, time, opt_acc) {
 goog.inherits(goog.fx.dom.FadeIn, goog.fx.dom.Fade);
 
 
+
 /**
  * Fades an element out from full opacity to completely transparent and then
  * sets the display to 'none'
@@ -451,14 +452,14 @@ goog.fx.dom.FadeOutAndHide = function(element, time, opt_acc) {
 goog.inherits(goog.fx.dom.FadeOutAndHide, goog.fx.dom.Fade);
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.FadeOutAndHide.prototype.onBegin = function() {
   this.show();
   goog.fx.dom.FadeOutAndHide.superClass_.onBegin.call(this);
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.FadeOutAndHide.prototype.onEnd = function() {
   this.hide();
   goog.fx.dom.FadeOutAndHide.superClass_.onEnd.call(this);
@@ -482,7 +483,7 @@ goog.fx.dom.FadeInAndShow = function(element, time, opt_acc) {
 goog.inherits(goog.fx.dom.FadeInAndShow, goog.fx.dom.Fade);
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.FadeInAndShow.prototype.onBegin = function() {
   this.show();
   goog.fx.dom.FadeInAndShow.superClass_.onBegin.call(this);
@@ -511,6 +512,7 @@ goog.fx.dom.BgColorTransform = function(element, start, end, time, opt_acc) {
 };
 goog.inherits(goog.fx.dom.BgColorTransform, goog.fx.dom.PredefinedEffect);
 
+
 /**
  * Animation event handler that will set the background-color of an element
  */
@@ -524,7 +526,7 @@ goog.fx.dom.BgColorTransform.prototype.setColor = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.fx.dom.BgColorTransform.prototype.updateStyle = function() {
   this.setColor();
 };
@@ -539,13 +541,15 @@ goog.fx.dom.BgColorTransform.prototype.updateStyle = function() {
  * @param {Element} element Dom Node to be used in the animation.
  * @param {Array.<number>} start 3D Array for RGB of start color.
  * @param {number} time Length of animation in milliseconds.
+ * @param {goog.events.EventHandler=} opt_eventHandler Optional event handler
+ *     to use when listening for events.
  */
-goog.fx.dom.bgColorFadeIn = function(element, start, time) {
+goog.fx.dom.bgColorFadeIn = function(element, start, time, opt_eventHandler) {
   var initialBgColor = element.style.backgroundColor || '';
   var computedBgColor = goog.style.getBackgroundColor(element);
   var end;
 
-  if (computedBgColor != 'transparent' &&
+  if (computedBgColor && computedBgColor != 'transparent' &&
       computedBgColor != 'rgba(0, 0, 0, 0)') {
     end = goog.color.hexToRgb(goog.color.parse(computedBgColor).hex);
   } else {
@@ -553,11 +557,22 @@ goog.fx.dom.bgColorFadeIn = function(element, start, time) {
   }
 
   var anim = new goog.fx.dom.BgColorTransform(element, start, end, time);
-  goog.events.listen(anim, goog.fx.Animation.EventType.END, function() {
+
+  function setBgColor() {
     element.style.backgroundColor = initialBgColor;
-  });
+  }
+
+  if (opt_eventHandler) {
+    opt_eventHandler.listen(
+        anim, goog.fx.Transition.EventType.END, setBgColor);
+  } else {
+    goog.events.listen(
+        anim, goog.fx.Transition.EventType.END, setBgColor);
+  }
+
   anim.play();
 };
+
 
 
 /**

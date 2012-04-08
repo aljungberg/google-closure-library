@@ -14,7 +14,6 @@
 
 /**
  * @fileoverview This file implements a store for goog.debug.Logger data.
- *
  */
 
 goog.provide('goog.gears.LogStore');
@@ -28,6 +27,7 @@ goog.require('goog.debug.Logger.Level');
 goog.require('goog.gears.BaseStore');
 goog.require('goog.gears.BaseStore.SchemaType');
 goog.require('goog.json');
+
 
 
 /**
@@ -102,7 +102,7 @@ goog.gears.LogStore = function(database, opt_tableName) {
 goog.inherits(goog.gears.LogStore, goog.gears.BaseStore);
 
 
-/** @inheritDoc */
+/** @override */
 goog.gears.LogStore.prototype.version = 1;
 
 
@@ -411,9 +411,7 @@ goog.gears.LogStore.prototype.select = function(query) {
 };
 
 
-/**
- * Clean up.
- */
+/** @override */
 goog.gears.LogStore.prototype.disposeInternal = function() {
   this.flush();
 

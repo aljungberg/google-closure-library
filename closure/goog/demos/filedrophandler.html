@@ -3,7 +3,7 @@
 <!--
 Copyright 2010 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <head>
@@ -47,7 +47,9 @@ See the COPYING file for details.
           for (var i = 0; i < files.length; i++) {
             // If you want to access the filename you should try both
             // alternatives.
+            var file = files[i];
             var fileName = file.name || file.fileName;
+            logger.info('File name: ' + fileName);
             // Sample code to upload the dropped files (commented out).
             // var xhr = new goog.net.XmlHttp();
             // xhr.open('POST', 'http://www.myserver.com/upload');

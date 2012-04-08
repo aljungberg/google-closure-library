@@ -15,7 +15,6 @@
 /**
  * @fileoverview Provides utility functions for formatting strings, numbers etc.
  *
- *
  */
 
 goog.provide('goog.format');
@@ -386,13 +385,13 @@ goog.format.conservativelyHasGraphemeBreak_ = function(
   // Return false for everything except the most common Cyrillic characters.
   // Don't worry about Latin characters, because insertWordBreaksGeneric_
   // itself already handles those.
-  // TODO(user): Also account for Greek, Armenian, and Georgian if it is
+  // TODO(gboyer): Also account for Greek, Armenian, and Georgian if it is
   // simple to do so.
   return charCode >= 0x400 && charCode < 0x523;
 };
 
 
-// TODO(user): Consider using a compile-time flag to switch implementations
+// TODO(gboyer): Consider using a compile-time flag to switch implementations
 // rather than relying on the developers to toggle implementations.
 /**
  * Inserts word breaks into an HTML string at a given interval.
@@ -416,13 +415,26 @@ goog.format.insertWordBreaksBasic = function(str, opt_maxlen) {
 
 
 /**
+ * True iff the current userAgent is IE8 or above.
+ * @type {boolean}
+ * @private
+ */
+goog.format.IS_IE8_OR_ABOVE_ = goog.userAgent.IE &&
+    goog.userAgent.isVersion(8);
+
+
+/**
  * Constant for the WBR replacement used by insertWordBreaks.  Safari requires
  * <wbr></wbr>, Opera needs the &shy; entity, though this will give a visible
- * hyphen at breaks.  Other browsers just use <wbr>.
+ * hyphen at breaks.  IE8 uses a zero width space.
+ * Other browsers just use <wbr>.
  * @type {string}
  */
-goog.format.WORD_BREAK_HTML = goog.userAgent.WEBKIT ? '<wbr></wbr>' :
-    goog.userAgent.OPERA ? '&shy;' : '<wbr>';
+goog.format.WORD_BREAK_HTML =
+    goog.userAgent.WEBKIT ?
+        '<wbr></wbr>' : goog.userAgent.OPERA ?
+            '&shy;' : goog.format.IS_IE8_OR_ABOVE_ ?
+                '&#8203;' : '<wbr>';
 
 
 /**

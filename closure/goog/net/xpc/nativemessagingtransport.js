@@ -16,15 +16,18 @@
  * @fileoverview Contains the class which uses native messaging
  * facilities for cross domain communication.
  *
- *
  */
 
 
 goog.provide('goog.net.xpc.NativeMessagingTransport');
 
+goog.require('goog.Timer');
 goog.require('goog.events');
+goog.require('goog.events.EventHandler');
 goog.require('goog.net.xpc');
+goog.require('goog.net.xpc.CrossPageChannelRole');
 goog.require('goog.net.xpc.Transport');
+
 
 
 /**
@@ -37,10 +40,15 @@ goog.require('goog.net.xpc.Transport');
  *     transport belongs to.
  * @param {string} peerHostname The hostname (protocol, domain, and port) of the
  *     peer.
+ * @param {goog.dom.DomHelper=} opt_domHelper The dom helper to use for
+ *     finding the correct window/document.
  * @constructor
  * @extends {goog.net.xpc.Transport}
  */
-goog.net.xpc.NativeMessagingTransport = function(channel, peerHostname) {
+goog.net.xpc.NativeMessagingTransport = function(channel, peerHostname,
+    opt_domHelper) {
+  goog.base(this, opt_domHelper);
+
   /**
    * The channel this transport belongs to.
    * @type {goog.net.xpc.CrossPageChannel}
@@ -55,8 +63,27 @@ goog.net.xpc.NativeMessagingTransport = function(channel, peerHostname) {
    * @private
    */
   this.peerHostname_ = peerHostname || '*';
+
+  /**
+   * The event handler.
+   * @type {!goog.events.EventHandler}
+   * @private
+   */
+  this.eventHandler_ = new goog.events.EventHandler(this);
+
+  /**
+   * Timer for connection reattempts.
+   * @type {!goog.Timer}
+   * @private
+   */
+  this.maybeAttemptToConnectTimer_ = new goog.Timer(100, this.getWindow());
+
+  this.eventHandler_.
+      listen(this.maybeAttemptToConnectTimer_, goog.Timer.TICK,
+          this.maybeAttemptToConnect_);
 };
 goog.inherits(goog.net.xpc.NativeMessagingTransport, goog.net.xpc.Transport);
+
 
 /**
  * Flag indicating if this instance of the transport has been initialized.
@@ -65,39 +92,51 @@ goog.inherits(goog.net.xpc.NativeMessagingTransport, goog.net.xpc.Transport);
  */
 goog.net.xpc.NativeMessagingTransport.prototype.initialized_ = false;
 
+
 /**
  * The transport type.
  * @type {number}
  */
 goog.net.xpc.NativeMessagingTransport.prototype.transportType =
-  goog.net.xpc.TransportTypes.NATIVE_MESSAGING;
+    goog.net.xpc.TransportTypes.NATIVE_MESSAGING;
+
 
 /**
  * Tracks the number of NativeMessagingTransport channels that have been
- * initialized but not disposed yet.
- * @type {number}
+ * initialized but not disposed yet in a map keyed by the UID of the window
+ * object.  This allows for multiple windows to be initiallized and listening
+ * for messages.
+ * @type {Object.<number>}
  * @private
  */
-goog.net.xpc.NativeMessagingTransport.activeCount_ = 0;
+goog.net.xpc.NativeMessagingTransport.activeCount_ = {};
+
 
 /**
  * Initializes this transport. Registers a listener for 'message'-events
  * on the document.
+ * @param {Window} listenWindow The window to listen to events on.
  * @private
  */
-goog.net.xpc.NativeMessagingTransport.initialize_ = function() {
-  if (goog.net.xpc.NativeMessagingTransport.activeCount_ == 0) {
+goog.net.xpc.NativeMessagingTransport.initialize_ = function(listenWindow) {
+  var uid = goog.getUid(listenWindow);
+  var value = goog.net.xpc.NativeMessagingTransport.activeCount_[uid];
+  if (!goog.isNumber(value)) {
+    value = 0;
+  }
+  if (value == 0) {
     // Listen for message-events. These are fired on window in FF3 and on
     // document in Opera.
     goog.events.listen(
-        window.postMessage ? window : document,
+        listenWindow.postMessage ? listenWindow : listenWindow.document,
         'message',
         goog.net.xpc.NativeMessagingTransport.messageReceived_,
         false,
         goog.net.xpc.NativeMessagingTransport);
   }
-  goog.net.xpc.NativeMessagingTransport.activeCount_++;
+  goog.net.xpc.NativeMessagingTransport.activeCount_[uid] = value + 1;
 };
+
 
 /**
  * Processes an incoming message-event.
@@ -107,6 +146,10 @@ goog.net.xpc.NativeMessagingTransport.initialize_ = function() {
  */
 goog.net.xpc.NativeMessagingTransport.messageReceived_ = function(msgEvt) {
   var data = msgEvt.getBrowserEvent().data;
+
+  if (!goog.isString(data)) {
+    return false;
+  }
 
   var headDelim = data.indexOf('|');
   var serviceDelim = data.indexOf(':');
@@ -132,14 +175,14 @@ goog.net.xpc.NativeMessagingTransport.messageReceived_ = function(msgEvt) {
   //  - channel has become stale (e.g. caching iframes and back clicks)
   var channel = goog.net.xpc.channels_[channelName];
   if (channel) {
-    channel.deliver_(service, payload);
+    channel.deliver_(service, payload, msgEvt.getBrowserEvent().origin);
     return true;
   }
 
   // Check if there are any stale channel names that can be updated.
   for (var staleChannelName in goog.net.xpc.channels_) {
     var staleChannel = goog.net.xpc.channels_[staleChannelName];
-    if (staleChannel.getRole() == goog.net.xpc.CrossPageChannel.Role.INNER &&
+    if (staleChannel.getRole() == goog.net.xpc.CrossPageChannelRole.INNER &&
         !staleChannel.isConnected() &&
         service == goog.net.xpc.TRANSPORT_SERVICE_ &&
         payload == goog.net.xpc.SETUP) {
@@ -188,9 +231,9 @@ goog.net.xpc.NativeMessagingTransport.prototype.transportServiceHandler =
  * Connects this transport.
  */
 goog.net.xpc.NativeMessagingTransport.prototype.connect = function() {
-  goog.net.xpc.NativeMessagingTransport.initialize_();
+  goog.net.xpc.NativeMessagingTransport.initialize_(this.getWindow());
   this.initialized_ = true;
-  this.connectWithRetries_();
+  this.maybeAttemptToConnect_();
 };
 
 
@@ -203,13 +246,14 @@ goog.net.xpc.NativeMessagingTransport.prototype.connect = function() {
  * soft-reloads and history navigations.
  * @private
  */
-goog.net.xpc.NativeMessagingTransport.prototype.connectWithRetries_ =
+goog.net.xpc.NativeMessagingTransport.prototype.maybeAttemptToConnect_ =
     function() {
   if (this.channel_.isConnected() || this.isDisposed()) {
+    this.maybeAttemptToConnectTimer_.stop();
     return;
   }
+  this.maybeAttemptToConnectTimer_.start();
   this.send(goog.net.xpc.TRANSPORT_SERVICE_, goog.net.xpc.SETUP);
-  window.setTimeout(goog.bind(this.connectWithRetries_, this), 100);
 };
 
 
@@ -240,20 +284,32 @@ goog.net.xpc.NativeMessagingTransport.prototype.send = function(service,
 };
 
 
-/**
- * Disposes of the transport.
- */
+/** @override */
 goog.net.xpc.NativeMessagingTransport.prototype.disposeInternal = function() {
-  goog.net.xpc.NativeMessagingTransport.superClass_.disposeInternal.call(this);
+  goog.base(this, 'disposeInternal');
   if (this.initialized_) {
-    goog.net.xpc.NativeMessagingTransport.activeCount_--;
-    if (goog.net.xpc.NativeMessagingTransport.activeCount_ == 0) {
+    var listenWindow = this.getWindow();
+    var uid = goog.getUid(listenWindow);
+    var value = goog.net.xpc.NativeMessagingTransport.activeCount_[uid];
+    goog.net.xpc.NativeMessagingTransport.activeCount_[uid] = value - 1;
+    if (value == 1) {
       goog.events.unlisten(
-          window.postMessage ? window : document,
+          listenWindow.postMessage ? listenWindow : listenWindow.document,
           'message',
           goog.net.xpc.NativeMessagingTransport.messageReceived_,
           false,
           goog.net.xpc.NativeMessagingTransport);
     }
   }
+
+  goog.dispose(this.eventHandler_);
+  delete this.eventHandler_;
+
+  goog.dispose(this.maybeAttemptToConnectTimer_);
+  delete this.maybeAttemptToConnectTimer_;
+
+  // Cleaning up this.send as it is an instance method, created in
+  // goog.net.xpc.NativeMessagingTransport.prototype.send and has a closure over
+  // this.channel_.peerWindowObject_.
+  delete this.send;
 };

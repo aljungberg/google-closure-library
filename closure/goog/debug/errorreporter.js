@@ -16,15 +16,15 @@
  * @fileoverview Definition of the ErrorReporter class, which creates an error
  * handler that reports any errors raised to a URL.
  *
- *
- *
  */
 
 goog.provide('goog.debug.ErrorReporter');
 goog.provide('goog.debug.ErrorReporter.ExceptionEvent');
 
+goog.require('goog.async.Deferred');
 goog.require('goog.debug');
 goog.require('goog.debug.ErrorHandler');
+goog.require('goog.debug.Logger');
 goog.require('goog.events');
 goog.require('goog.events.Event');
 goog.require('goog.events.EventTarget');
@@ -32,6 +32,7 @@ goog.require('goog.net.XhrIo');
 goog.require('goog.object');
 goog.require('goog.string');
 goog.require('goog.uri.utils');
+
 
 
 /**
@@ -79,6 +80,7 @@ goog.debug.ErrorReporter = function(
   }
 };
 goog.inherits(goog.debug.ErrorReporter, goog.events.EventTarget);
+
 
 
 /**
@@ -208,6 +210,7 @@ goog.debug.ErrorReporter.prototype.setLoggingHeaders =
   this.extraHeaders_ = loggingHeaders;
 };
 
+
 /**
  * Set the function used to send error reports to the server.
  * @param {function(string, string, string, (Object|goog.structs.Map)=)}
@@ -228,7 +231,7 @@ goog.debug.ErrorReporter.prototype.setXhrSender = function(xhrSender) {
  */
 goog.debug.ErrorReporter.prototype.setup_ = function() {
   if (goog.userAgent.IE) {
-    // Use "onerror" because caught exceptions in IE don't provide line number.
+  // Use "onerror" because caught exceptions in IE don't provide line number.
     goog.debug.catchErrors(
         goog.bind(this.handleException, this), false, null);
   } else {
@@ -247,12 +250,19 @@ goog.debug.ErrorReporter.prototype.setup_ = function() {
  * Handler for caught exceptions. Sends report to the LoggingServlet and
  * notifies any listeners.
  *
- * @param {Error} e The exception.
+ * @param {Object} e The exception.
  * @param {!Object.<string, string>=} opt_context Context values to optionally
  *     include in the error report.
  */
 goog.debug.ErrorReporter.prototype.handleException = function(e,
     opt_context) {
+  if (e instanceof goog.async.Deferred.UnhandledError) {
+    // goog.async.Deferred throws unhandled errors in a setTimeout callback.
+    // In order to preserve the original stack trace, the errors are wrapped
+    // inside of an UnhandledError.
+    e = e.cause || e;
+  }
+
   var error = (/** @type {!Error} */ goog.debug.normalizeErrorObject(e));
 
   // Construct the context, possibly from the one provided in the argument, and
@@ -319,4 +329,11 @@ goog.debug.ErrorReporter.prototype.sendErrorReport =
         'trace:', opt_trace);
     goog.debug.ErrorReporter.logger_.info(logMessage);
   }
+};
+
+
+/** @override */
+goog.debug.ErrorReporter.prototype.disposeInternal = function() {
+  goog.dispose(this.errorHandler_);
+  goog.base(this, 'disposeInternal');
 };

@@ -16,8 +16,8 @@
 /**
  * @fileoverview Thin wrappers around the DOM element returned from
  * the different draw methods of the graphics. This is the VML implementation.
- *
- *
+ * @author arv@google.com (Erik Arvidsson)
+ * @author yoah@google.com (Yoah Bar-David)
  */
 
 goog.provide('goog.graphics.VmlEllipseElement');
@@ -53,6 +53,7 @@ goog.graphics.vmlGetElement_ = function() {
 };
 
 
+
 /**
  * Thin wrapper for VML group elements.
  * This is an implementation of the goog.graphics.GroupElement interface.
@@ -71,7 +72,7 @@ goog.graphics.VmlGroupElement = function(element, graphics) {
 goog.inherits(goog.graphics.VmlGroupElement, goog.graphics.GroupElement);
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlGroupElement.prototype.getElement =
     goog.graphics.vmlGetElement_;
 
@@ -113,6 +114,7 @@ goog.graphics.VmlGroupElement.prototype.setSize = function(width, height) {
     element.coordorigin = '0 0';
   }
 };
+
 
 
 /**
@@ -170,7 +172,7 @@ goog.graphics.VmlEllipseElement = function(element, graphics,
 goog.inherits(goog.graphics.VmlEllipseElement, goog.graphics.EllipseElement);
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlEllipseElement.prototype.getElement =
     goog.graphics.vmlGetElement_;
 
@@ -201,6 +203,7 @@ goog.graphics.VmlEllipseElement.prototype.setRadius = function(rx, ry) {
 };
 
 
+
 /**
  * Thin wrapper for VML rectangle elements.
  * This is an implementation of the goog.graphics.RectElement interface.
@@ -221,7 +224,7 @@ goog.graphics.VmlRectElement = function(element, graphics, stroke, fill) {
 goog.inherits(goog.graphics.VmlRectElement, goog.graphics.RectElement);
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlRectElement.prototype.getElement =
     goog.graphics.vmlGetElement_;
 
@@ -250,6 +253,7 @@ goog.graphics.VmlRectElement.prototype.setSize = function(width, height) {
 };
 
 
+
 /**
  * Thin wrapper for VML path elements.
  * This is an implementation of the goog.graphics.PathElement interface.
@@ -270,7 +274,7 @@ goog.graphics.VmlPathElement = function(element, graphics, stroke, fill) {
 goog.inherits(goog.graphics.VmlPathElement, goog.graphics.PathElement);
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlPathElement.prototype.getElement =
     goog.graphics.vmlGetElement_;
 
@@ -283,6 +287,7 @@ goog.graphics.VmlPathElement.prototype.setPath = function(path) {
   goog.graphics.VmlGraphics.setAttribute(
       this.getElement(), 'path', goog.graphics.VmlGraphics.getVmlPath(path));
 };
+
 
 
 /**
@@ -305,7 +310,7 @@ goog.graphics.VmlTextElement = function(element, graphics, stroke, fill) {
 goog.inherits(goog.graphics.VmlTextElement, goog.graphics.TextElement);
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlTextElement.prototype.getElement =
     goog.graphics.vmlGetElement_;
 
@@ -318,6 +323,7 @@ goog.graphics.VmlTextElement.prototype.setText = function(text) {
   goog.graphics.VmlGraphics.setAttribute(this.getElement().childNodes[1],
       'string', text);
 };
+
 
 
 /**
@@ -338,7 +344,7 @@ goog.graphics.VmlImageElement = function(element, graphics) {
 goog.inherits(goog.graphics.VmlImageElement, goog.graphics.ImageElement);
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.VmlImageElement.prototype.getElement =
     goog.graphics.vmlGetElement_;
 

@@ -15,8 +15,6 @@
 /**
  * @fileoverview Basic class for matching words in an array.
  *
- *
- *
  */
 
 
@@ -25,6 +23,7 @@ goog.provide('goog.ui.AutoComplete.ArrayMatcher');
 goog.require('goog.iter');
 goog.require('goog.string');
 goog.require('goog.ui.AutoComplete');
+
 
 
 /**
@@ -38,6 +37,15 @@ goog.require('goog.ui.AutoComplete');
 goog.ui.AutoComplete.ArrayMatcher = function(rows, opt_noSimilar) {
   this.rows_ = rows;
   this.useSimilar_ = !opt_noSimilar;
+};
+
+
+/**
+ * Replaces the rows that this object searches over.
+ * @param {Array} rows Dictionary of items to match.
+ */
+goog.ui.AutoComplete.ArrayMatcher.prototype.setRows = function(rows) {
+  this.rows_ = rows;
 };
 
 

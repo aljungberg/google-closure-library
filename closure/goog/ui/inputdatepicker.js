@@ -17,7 +17,6 @@
  * goog.ui.PopupDatePicker with an input element and handles the input from
  * either.
  *
- *
  * @see ../demos/inputdatepicker.html
  */
 
@@ -29,6 +28,7 @@ goog.require('goog.i18n.DateTimeParse');
 goog.require('goog.string');
 goog.require('goog.ui.Component');
 goog.require('goog.ui.PopupDatePicker');
+
 
 
 /**
@@ -249,7 +249,7 @@ goog.ui.InputDatePicker.prototype.exitDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.InputDatePicker.prototype.decorateInternal = function(element) {
   goog.ui.InputDatePicker.superClass_.decorateInternal.call(this, element);
 
@@ -257,7 +257,7 @@ goog.ui.InputDatePicker.prototype.decorateInternal = function(element) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.InputDatePicker.prototype.disposeInternal = function() {
   goog.ui.InputDatePicker.superClass_.disposeInternal.call(this);
   this.popupDatePicker_.dispose();

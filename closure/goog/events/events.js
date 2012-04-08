@@ -34,10 +34,7 @@
  * goog.events.removeAll();
  * </pre>
  *
- *
- *
  *                                            in IE and event object patching]
- *
  *
  * @supported IE6+, FF1.5+, WebKit, Opera.
  * @see ../demos/events.html
@@ -62,11 +59,20 @@ goog.require('goog.array');
 goog.require('goog.debug.entryPointRegistry');
 goog.require('goog.debug.errorHandlerWeakDep');
 goog.require('goog.events.BrowserEvent');
+goog.require('goog.events.BrowserFeature');
 goog.require('goog.events.Event');
 goog.require('goog.events.EventWrapper');
-goog.require('goog.events.pools');
+goog.require('goog.events.Listener');
 goog.require('goog.object');
 goog.require('goog.userAgent');
+
+
+/**
+ * @define {boolean} Whether to always assume the garbage collector is good.
+ * @deprecated This is no longer needed and will be removed once apps are
+ * updated.
+ */
+goog.events.ASSUME_GOOD_GC = false;
 
 
 /**
@@ -121,14 +127,6 @@ goog.events.keySeparator_ = '_';
 
 
 /**
- * Whether the browser natively supports full W3C event propagation.
- * @type {boolean}
- * @private
- */
-goog.events.requiresSyntheticEventPropagation_;
-
-
-/**
  * Adds an event listener for a specific event on a DOM Node or an object that
  * has implemented {@link goog.events.EventTarget}. A listener can only be
  * added once to an object and if it is added again the key for the listener
@@ -157,12 +155,12 @@ goog.events.listen = function(src, type, listener, opt_capt, opt_handler) {
     var map = goog.events.listenerTree_;
 
     if (!(type in map)) {
-      map[type] = goog.events.pools.getObject();
+      map[type] = {count_: 0, remaining_: 0};
     }
     map = map[type];
 
     if (!(capture in map)) {
-      map[capture] = goog.events.pools.getObject();
+      map[capture] = {count_: 0, remaining_: 0};
       map.count_++;
     }
     map = map[capture];
@@ -182,7 +180,7 @@ goog.events.listen = function(src, type, listener, opt_capt, opt_handler) {
     // Do not use srcUid in map here since that will cast the number to a
     // string which will allocate one string object.
     if (!map[srcUid]) {
-      listenerArray = map[srcUid] = goog.events.pools.getArray();
+      listenerArray = map[srcUid] = [];
       map.count_++;
     } else {
       listenerArray = map[srcUid];
@@ -205,9 +203,9 @@ goog.events.listen = function(src, type, listener, opt_capt, opt_handler) {
       }
     }
 
-    var proxy = goog.events.pools.getProxy();
+    var proxy = goog.events.getProxy();
     proxy.src = src;
-    listenerObj = goog.events.pools.getListener();
+    listenerObj = new goog.events.Listener();
     listenerObj.init(listener, proxy, src, type, capture, opt_handler);
     var key = listenerObj.key;
     proxy.key = key;
@@ -216,7 +214,7 @@ goog.events.listen = function(src, type, listener, opt_capt, opt_handler) {
     goog.events.listeners_[key] = listenerObj;
 
     if (!goog.events.sources_[srcUid]) {
-      goog.events.sources_[srcUid] = goog.events.pools.getArray();
+      goog.events.sources_[srcUid] = [];
     }
     goog.events.sources_[srcUid].push(listenerObj);
 
@@ -237,6 +235,31 @@ goog.events.listen = function(src, type, listener, opt_capt, opt_handler) {
 
     return key;
   }
+};
+
+
+/**
+ * Helper function for returning a proxy function.
+ * @return {Function} A new or reused function object.
+ */
+goog.events.getProxy = function() {
+  var proxyCallbackFunction = goog.events.handleBrowserEvent_;
+  // Use a local var f to prevent one allocation.
+  var f = goog.events.BrowserFeature.HAS_W3C_EVENT_SUPPORT ?
+      function(eventObject) {
+        return proxyCallbackFunction.call(f.src, f.key, eventObject);
+      } :
+      function(eventObject) {
+        var v = proxyCallbackFunction.call(f.src, f.key, eventObject);
+        // NOTE(user): In IE, we hack in a capture phase. However, if
+        // there is inline event handler which tries to prevent default (for
+        // example <a href="..." onclick="return false">...</a>) in a
+        // descendant element, the prevent default will be overridden
+        // by this listener if this listener were to return true. Hence, we
+        // return undefined.
+        if (!v) return v;
+      };
+  return f;
 };
 
 
@@ -356,7 +379,7 @@ goog.events.unlistenByKey = function(key) {
   if (src.removeEventListener) {
     // EventTarget calls unlisten so we need to ensure that the source is not
     // an event target to prevent re-entry.
-    // TODO(user): What is this goog.global for? Why would anyone listen to
+    // TODO(arv): What is this goog.global for? Why would anyone listen to
     // events on the [[Global]] object? Is it supposed to be window? Why would
     // we not want to allow removing event listeners on the window?
     if (src == goog.global || !src.customEvent_) {
@@ -439,8 +462,6 @@ goog.events.cleanUp_ = function(type, capture, srcUid, listenerArray) {
         if (listenerArray[oldIndex].removed) {
           var proxy = listenerArray[oldIndex].proxy;
           proxy.src = null;
-          goog.events.pools.releaseProxy(proxy);
-          goog.events.pools.releaseListener(listenerArray[oldIndex]);
           continue;
         }
         if (oldIndex != newIndex) {
@@ -454,19 +475,15 @@ goog.events.cleanUp_ = function(type, capture, srcUid, listenerArray) {
 
       // In case the length is now zero we release the object.
       if (newIndex == 0) {
-        goog.events.pools.releaseArray(listenerArray);
         delete goog.events.listenerTree_[type][capture][srcUid];
         goog.events.listenerTree_[type][capture].count_--;
 
         if (goog.events.listenerTree_[type][capture].count_ == 0) {
-          goog.events.pools.releaseObject(
-              goog.events.listenerTree_[type][capture]);
           delete goog.events.listenerTree_[type][capture];
           goog.events.listenerTree_[type].count_--;
         }
 
         if (goog.events.listenerTree_[type].count_ == 0) {
-          goog.events.pools.releaseObject(goog.events.listenerTree_[type]);
           delete goog.events.listenerTree_[type];
         }
       }
@@ -547,7 +564,7 @@ goog.events.getListeners = function(obj, type, capture) {
  * @param {?string} type Event type.
  * @param {boolean} capture Capture phase?.
  * @return {Array.<goog.events.Listener>?} Array of listener objects.
- *     Returns null if object has no lsiteners of that type.
+ *     Returns null if object has no listeners of that type.
  * @private
  */
 goog.events.getListeners_ = function(obj, type, capture) {
@@ -571,10 +588,10 @@ goog.events.getListeners_ = function(obj, type, capture) {
  * Gets the goog.events.Listener for the event or null if no such listener is
  * in use.
  *
- * @param {EventTarget|goog.events.EventTarget} src The node to stop
- *     listening to events on.
+ * @param {EventTarget|goog.events.EventTarget} src The node from which to get
+ *     listeners.
  * @param {?string} type The name of the event without the 'on' prefix.
- * @param {Function|Object} listener The listener function to remove.
+ * @param {Function|Object} listener The listener function to get.
  * @param {boolean=} opt_capt In DOM-compliant browsers, this determines
  *                            whether the listener is fired during the
  *                            capture or bubble phase of the event.
@@ -586,7 +603,11 @@ goog.events.getListener = function(src, type, listener, opt_capt, opt_handler) {
   var listenerArray = goog.events.getListeners_(src, type, capture);
   if (listenerArray) {
     for (var i = 0; i < listenerArray.length; i++) {
-      if (listenerArray[i].listener == listener &&
+      // If goog.events.unlistenByKey is called during an event dispatch
+      // then the listener array won't get cleaned up and there might be
+      // 'removed' listeners in the list. Ignore those.
+      if (!listenerArray[i].removed &&
+          listenerArray[i].listener == listener &&
           listenerArray[i].capture == capture &&
           listenerArray[i].handler == opt_handler) {
         // We already have this listener. Return its key.
@@ -787,26 +808,25 @@ goog.events.getTotalListenerCount = function() {
  *     true.
  */
 goog.events.dispatchEvent = function(src, e) {
+  var type = e.type || e;
+  var map = goog.events.listenerTree_;
+  if (!(type in map)) {
+    return true;
+  }
+
   // If accepting a string or object, create a custom event object so that
   // preventDefault and stopPropagation work with the event.
   if (goog.isString(e)) {
     e = new goog.events.Event(e, src);
   } else if (!(e instanceof goog.events.Event)) {
     var oldEvent = e;
-    e = new goog.events.Event(e.type, src);
+    e = new goog.events.Event(type, src);
     goog.object.extend(e, oldEvent);
   } else {
     e.target = e.target || src;
   }
 
   var rv = 1, ancestors;
-
-  var type = e.type;
-  var map = goog.events.listenerTree_;
-
-  if (!(type in map)) {
-    return true;
-  }
 
   map = map[type];
   var hasCapture = true in map;
@@ -878,7 +898,6 @@ goog.events.dispatchEvent = function(src, e) {
 goog.events.protectBrowserEventEntryPoint = function(errorHandler) {
   goog.events.handleBrowserEvent_ = errorHandler.protectEntryPoint(
       goog.events.handleBrowserEvent_);
-  goog.events.pools.setProxyCallbackFunction(goog.events.handleBrowserEvent_);
 };
 
 
@@ -886,7 +905,7 @@ goog.events.protectBrowserEventEntryPoint = function(errorHandler) {
  * Handles an event and dispatches it to the correct listeners. This
  * function is a proxy for the real listener the user specified.
  *
- * @param {string} key Unique key for the listener.
+ * @param {number} key Unique key for the listener.
  * @param {Event=} opt_evt Optional event object that gets passed in via the
  *     native event handlers.
  * @return {boolean} Result of the event handler.
@@ -911,7 +930,9 @@ goog.events.handleBrowserEvent_ = function(key, opt_evt) {
   }
   map = map[type];
   var retval, targetsMap;
-  if (goog.events.synthesizeEventPropagation_()) {
+  // Synthesize event propagation if the browser does not support W3C
+  // event model.
+  if (!goog.events.BrowserFeature.HAS_W3C_EVENT_SUPPORT) {
     var ieEvent = opt_evt ||
         /** @type {Event} */ (goog.getObjectByName('window.event'));
 
@@ -927,13 +948,13 @@ goog.events.handleBrowserEvent_ = function(key, opt_evt) {
       goog.events.markIeEvent_(ieEvent);
     }
 
-    var evt = goog.events.pools.getEvent();
+    var evt = new goog.events.BrowserEvent();
     evt.init(ieEvent, this);
 
     retval = true;
     try {
       if (hasCapture) {
-        var ancestors = goog.events.pools.getArray();
+        var ancestors = [];
 
         for (var parent = evt.currentTarget;
              parent;
@@ -976,10 +997,8 @@ goog.events.handleBrowserEvent_ = function(key, opt_evt) {
     } finally {
       if (ancestors) {
         ancestors.length = 0;
-        goog.events.pools.releaseArray(ancestors);
       }
       evt.dispose();
-      goog.events.pools.releaseEvent(evt);
     }
     return retval;
   } // IE
@@ -993,11 +1012,6 @@ goog.events.handleBrowserEvent_ = function(key, opt_evt) {
   }
   return retval;
 };
-
-
-// Set the callback for the proxy pool. This is done here to prevent circular
-// dependencies.
-goog.events.pools.setProxyCallbackFunction(goog.events.handleBrowserEvent_);
 
 
 /**
@@ -1044,7 +1058,6 @@ goog.events.markIeEvent_ = function(e) {
  * @param {Event} e  The IE browser event.
  * @return {boolean} True if the event object has been marked.
  * @private
- * @notypecheck TODO(nicksantos): Fix this.
  */
 goog.events.isMarkedIeEvent_ = function(e) {
   return e.keyCode < 0 || e.returnValue != undefined;
@@ -1070,26 +1083,6 @@ goog.events.getUniqueId = function(identifier) {
 };
 
 
-/**
- * Returns whether we should synthesize the W3C event propagation.  Versions of
- * IE, up to IE9, don't support addEventListener or the capture phase.
- * @return {boolean} Whether to use IE's proprietary event model.
- * @private
- */
-goog.events.synthesizeEventPropagation_ = function() {
-  if (goog.events.requiresSyntheticEventPropagation_ === undefined) {
-    // TODO(user): goog.events is used in a non DOM context, even though it
-    // couldn't be used with DOM events.  We therefore assume that if we
-    // got here that goog.global===window to keep the compiler happy.  We can't
-    // use navigator.userAgent yet because the IE9 platform preview still
-    // reports as MSIE 8.0.
-    goog.events.requiresSyntheticEventPropagation_ =
-        goog.userAgent.IE && !goog.global['addEventListener'];
-  }
-  return goog.events.requiresSyntheticEventPropagation_;
-};
-
-
 // Register the browser event handler as an entry point, so that
 // it can be monitored for exception handling, etc.
 goog.debug.entryPointRegistry.register(
@@ -1099,7 +1092,5 @@ goog.debug.entryPointRegistry.register(
      */
     function(transformer) {
       goog.events.handleBrowserEvent_ = transformer(
-          goog.events.handleBrowserEvent_);
-      goog.events.pools.setProxyCallbackFunction(
           goog.events.handleBrowserEvent_);
     });

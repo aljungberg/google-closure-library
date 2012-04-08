@@ -16,7 +16,6 @@
 /**
  * @fileoverview Abstract API for TrogEdit plugins.
  *
- *
  * @see ../demos/editor/editor.html
  */
 
@@ -30,6 +29,8 @@ goog.require('goog.events.EventTarget');
 goog.require('goog.functions');
 goog.require('goog.object');
 goog.require('goog.reflect');
+
+
 
 /**
  * Abstract API for trogedit plugins.
@@ -182,7 +183,7 @@ goog.editor.Plugin.prototype.activeOnUneditableFields = goog.functions.FALSE;
 goog.editor.Plugin.prototype.isSilentCommand = goog.functions.FALSE;
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.Plugin.prototype.disposeInternal = function() {
   if (this.fieldObject) {
     this.unregisterFieldObject(this.fieldObject);
@@ -273,6 +274,7 @@ goog.editor.Plugin.prototype.handleKeyPress;
  */
 goog.editor.Plugin.prototype.handleKeyUp;
 
+
 /**
  * Handles selection change.
  * @param {!goog.events.BrowserEvent=} opt_e The browser event.
@@ -352,12 +354,7 @@ goog.editor.Plugin.prototype.execCommand = function(command, var_args) {
       // dispatchChange includes a call to startChangeEvents, which unwinds the
       // call to stopChangeEvents made before the try block.
       this.fieldObject.dispatchChange();
-      // TODO(user): Remove this conditional.  We should always dispatch a
-      // a selection change event here, but link creation is wierd.  See
-      // TR_Editor.prototype.execute for more details
-      if (command != goog.editor.Command.LINK) {
-        this.fieldObject.dispatchSelectionChangeEvent();
-      }
+      this.fieldObject.dispatchSelectionChangeEvent();
     }
   }
 

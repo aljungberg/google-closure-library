@@ -20,7 +20,7 @@
  * be used directly.
  *
  * @author robbyw@google.com (Robby Walker)
- *
+ * @author tildahl@google.com (Michael Tildahl)
  */
 
 goog.provide('goog.ui.editor.Bubble');
@@ -32,6 +32,7 @@ goog.require('goog.editor.style');
 goog.require('goog.events');
 goog.require('goog.events.EventHandler');
 goog.require('goog.events.EventType');
+goog.require('goog.math.Box');
 goog.require('goog.positioning');
 goog.require('goog.string');
 goog.require('goog.style');
@@ -39,6 +40,7 @@ goog.require('goog.ui.Component.EventType');
 goog.require('goog.ui.PopupBase');
 goog.require('goog.ui.PopupBase.EventType');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -56,7 +58,7 @@ goog.ui.editor.Bubble = function(parent, zIndex) {
    * @type {!goog.dom.DomHelper}
    * @private
    */
-  this.dom_ = new goog.dom.getDomHelper(parent);
+  this.dom_ = goog.dom.getDomHelper(parent);
 
   /**
    * Event handler for this bubble.
@@ -157,7 +159,7 @@ goog.ui.editor.Bubble.prototype.logger =
     goog.debug.Logger.getLogger('goog.ui.editor.Bubble');
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.editor.Bubble.prototype.disposeInternal = function() {
   goog.base(this, 'disposeInternal');
 
@@ -463,6 +465,7 @@ goog.ui.editor.Bubble.prototype.positionAtAnchor_ = function(
       targetElement, targetCorner, this.bubbleContainer_,
       bubbleCorner, null, goog.ui.editor.Bubble.MARGIN_BOX_, overflow);
 };
+
 
 
 /**

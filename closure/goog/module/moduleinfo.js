@@ -15,10 +15,6 @@
 /**
  * @fileoverview Defines the goog.module.ModuleInfo class.
  *
- *
- *
- *
- *
  */
 
 goog.provide('goog.module.ModuleInfo');
@@ -30,6 +26,7 @@ goog.require('goog.module.ModuleLoadCallback');
 // TODO(user): Circular dependency between ModuleManager and ModuleInfo.  Move
 // FailureType to goog.module.FailureType.
 // goog.require('goog.module.ModuleManager.FailureType');
+
 
 
 /**
@@ -253,6 +250,8 @@ goog.module.ModuleInfo.prototype.getModule = function() {
  * Sets this module as loaded.
  * @param {function() : Object} contextProvider A function that provides the
  *     module context.
+ * @return {boolean} Whether any errors occurred while executing the onload
+ *     callbacks.
  */
 goog.module.ModuleInfo.prototype.onLoad = function(contextProvider) {
   // Instantiate and initialize the module object.
@@ -264,18 +263,18 @@ goog.module.ModuleInfo.prototype.onLoad = function(contextProvider) {
 
   // Fire any early callbacks that were waiting for the module to be loaded.
   var errors =
-      this.callCallbacks_(this.earlyOnloadCallbacks_, contextProvider());
+      !!this.callCallbacks_(this.earlyOnloadCallbacks_, contextProvider());
 
   // Fire any callbacks that were waiting for the module to be loaded.
-  errors = !!errors |
+  errors = errors ||
       !!this.callCallbacks_(this.onloadCallbacks_, contextProvider());
 
-  if (errors) {
-    this.onError(goog.module.ModuleManager.FailureType.INIT_ERROR);
-  } else {
+  if (!errors) {
     // Clear the errbacks.
     this.onErrorCallbacks_.length = 0;
   }
+
+  return errors;
 };
 
 
@@ -332,7 +331,7 @@ goog.module.ModuleInfo.prototype.callCallbacks_ = function(callbacks, context) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.module.ModuleInfo.prototype.disposeInternal = function() {
   goog.module.ModuleInfo.superClass_.disposeInternal.call(this);
   goog.dispose(this.module_);

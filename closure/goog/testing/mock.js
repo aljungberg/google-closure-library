@@ -33,7 +33,6 @@
  *   Have the exceptions for LooseMock show the number of expected/actual calls
  *   loose and strict mocks share a lot of code - move it to the base class
  *
- *
  */
 
 goog.provide('goog.testing.Mock');
@@ -41,7 +40,10 @@ goog.provide('goog.testing.MockExpectation');
 
 goog.require('goog.array');
 goog.require('goog.testing.JsUnitException');
+goog.require('goog.testing.MockInterface');
 goog.require('goog.testing.mockmatchers');
+
+
 
 /**
  * This is a class that represents an expectation.
@@ -148,6 +150,7 @@ goog.testing.MockExpectation.prototype.getErrorMessageCount = function() {
 };
 
 
+
 /**
  * The base class for a mock object.
  * @param {Object|Function} objectToMock The object that should be mocked, or
@@ -157,6 +160,7 @@ goog.testing.MockExpectation.prototype.getErrorMessageCount = function() {
  * @param {boolean=} opt_createProxy An optional argument denoting that
  *     a proxy for the target mock should be created.
  * @constructor
+ * @implements {goog.testing.MockInterface}
  */
 goog.testing.Mock = function(objectToMock, opt_mockStaticMethods,
     opt_createProxy) {
@@ -183,6 +187,26 @@ goog.testing.Mock = function(objectToMock, opt_mockStaticMethods,
   }
   this.$argumentListVerifiers_ = {};
 };
+
+
+/**
+ * Option that may be passed when constructing function, method, and
+ * constructor mocks. Indicates that the expected calls should be accepted in
+ * any order.
+ * @const
+ * @type {number}
+ */
+goog.testing.Mock.LOOSE = 1;
+
+
+/**
+ * Option that may be passed when constructing function, method, and
+ * constructor mocks. Indicates that the expected calls should be accepted in
+ * the recorded order only.
+ * @const
+ * @type {number}
+ */
+goog.testing.Mock.STRICT = 0;
 
 
 /**
@@ -495,8 +519,11 @@ goog.testing.Mock.prototype.$verifyCall = function(expectation, name, args) {
   if (expectation.name != name) {
     return false;
   }
-  var verifierFn = this.$argumentListVerifiers_[expectation.name] ||
+  var verifierFn =
+      this.$argumentListVerifiers_.hasOwnProperty(expectation.name) ?
+      this.$argumentListVerifiers_[expectation.name] :
       goog.testing.mockmatchers.flexibleArrayMatcher;
+
   return verifierFn(expectation.argumentList, args, expectation);
 };
 

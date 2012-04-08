@@ -15,9 +15,6 @@
 /**
  * @fileoverview Functions to style text.
  *
- *
- * @author nicksantos@google.com (Nick Santos)
- *
  */
 
 goog.provide('goog.editor.plugins.BasicTextFormatter');
@@ -42,6 +39,7 @@ goog.require('goog.ui.editor.messages');
 goog.require('goog.userAgent');
 
 
+
 /**
  * Functions to style text (e.g. underline, make bold, etc.)
  * @constructor
@@ -53,7 +51,7 @@ goog.editor.plugins.BasicTextFormatter = function() {
 goog.inherits(goog.editor.plugins.BasicTextFormatter, goog.editor.Plugin);
 
 
-/** @inheritDoc */
+/** @override */
 goog.editor.plugins.BasicTextFormatter.prototype.getTrogClassId = function() {
   return 'BTF';
 };
@@ -318,7 +316,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.execCommandInternal = function(
        * goog.editor.plugins.BasicTextFormatter.COMMAND.FONT_SIZE:
        * goog.editor.plugins.BasicTextFormatter.COMMAND.FONT_FACE:
        */
-      this.execCommandHelper_(command, opt_arg, preserveDir, styleWithCss);
+      this.execCommandHelper_(command, opt_arg, preserveDir, !!styleWithCss);
 
       if (hasDummySelection) {
         this.getDocument_().execCommand('Delete', false, true);
@@ -415,7 +413,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.queryCommandValue = function(
 
 
 /**
- * @inheritDoc
+ * @override
  */
 goog.editor.plugins.BasicTextFormatter.prototype.prepareContentsHtml =
     function(html) {
@@ -438,7 +436,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.prepareContentsHtml =
 
 
 /**
- * @inheritDoc
+ * @override
  */
 goog.editor.plugins.BasicTextFormatter.prototype.cleanContentsDom =
     function(fieldCopy) {
@@ -467,7 +465,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.cleanContentsDom =
 
 
 /**
- * @inheritDoc
+ * @override
  */
 goog.editor.plugins.BasicTextFormatter.prototype.cleanContentsHtml =
     function(html) {
@@ -495,7 +493,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.cleanContentsHtml =
 
 
 /**
- * @inheritDoc
+ * @override
  */
 goog.editor.plugins.BasicTextFormatter.prototype.handleKeyboardShortcut =
     function(e, key, isModifierPressed) {
@@ -532,6 +530,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.handleKeyboardShortcut =
 
 // Helpers for execCommand
 
+
 /**
  * Regular expression to match BRs in HTML. Saves the BRs' attributes in $1 for
  * use with replace(). In non-IE browsers, does not match BRs adjacent to an
@@ -543,6 +542,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.handleKeyboardShortcut =
 goog.editor.plugins.BasicTextFormatter.BR_REGEXP_ =
     goog.userAgent.IE ? /<br([^\/>]*)\/?>/gi :
                         /<br([^\/>]*)\/?>(?!<\/(div|p)>)/gi;
+
 
 /**
  * Convert BRs in the selection to divs.
@@ -1003,6 +1003,7 @@ goog.editor.plugins.BasicTextFormatter.prototype.createLink_ = function(range,
 //---------------------------------------------------------------------
 // browser fixes
 
+
 /**
  * The following execCommands are "broken" in some way - in IE they allow
  * the nodes outside the contentEditable region to get modified (see
@@ -1458,8 +1459,6 @@ goog.editor.plugins.BasicTextFormatter.prototype.applyExecCommandGeckoFixes_ =
  * Workaround for Opera bug CORE-23903. Opera sometimes fails to invalidate
  * serialized CSS or innerHTML for the DOM after certain execCommands when
  * styleWithCSS is on. Toggling an inline style on the elements fixes it.
- * TODO(user): Opera says they're going to prioritize a fix for this. Remove
- *              this code once that fix is released.
  * @private
  */
 goog.editor.plugins.BasicTextFormatter.prototype.invalidateInlineCss_ =
@@ -1567,6 +1566,7 @@ goog.editor.plugins.BasicTextFormatter.SUPPORTED_JUSTIFICATIONS_ = {
   'right': 1,
   'left': 1
 };
+
 
 /**
  * Returns true if the current justification matches the justification

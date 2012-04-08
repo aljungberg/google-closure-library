@@ -18,7 +18,6 @@
  * results aggregated.  The main usecase for the MultiTestRunner is to allow
  * the testing of all tests in a project locally.
  *
- *
  */
 
 goog.provide('goog.testing.MultiTestRunner');
@@ -35,6 +34,7 @@ goog.require('goog.ui.Component');
 goog.require('goog.ui.ServerChart');
 goog.require('goog.ui.ServerChart.ChartType');
 goog.require('goog.ui.TableSorter');
+
 
 
 /**
@@ -534,6 +534,7 @@ goog.testing.MultiTestRunner.prototype.getTestsThatFailed = function() {
   return failedTests;
 };
 
+
 /**
  * Deletes and re-creates the progress table inside the progess element.
  * @private
@@ -553,7 +554,7 @@ goog.testing.MultiTestRunner.prototype.resetProgressDom_ = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.testing.MultiTestRunner.prototype.createDom = function() {
   goog.testing.MultiTestRunner.superClass_.createDom.call(this);
   var el = this.getElement();
@@ -592,8 +593,8 @@ goog.testing.MultiTestRunner.prototype.createDom = function() {
   el.appendChild(this.statsEl_);
 
   this.logTabEl_ = this.dom_.createDom('div', null, 'Log');
-  this.logTabEl_.className =
-      goog.getCssName('goog-testrunner-logtab goog-testrunner-activetab');
+  this.logTabEl_.className = goog.getCssName('goog-testrunner-logtab') + ' ' +
+      goog.getCssName('goog-testrunner-activetab');
   el.appendChild(this.logTabEl_);
 
   this.reportTabEl_ = this.dom_.createDom('div', null, 'Report');
@@ -611,7 +612,7 @@ goog.testing.MultiTestRunner.prototype.createDom = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.testing.MultiTestRunner.prototype.disposeInternal = function() {
   goog.testing.MultiTestRunner.superClass_.disposeInternal.call(this);
   this.tableSorter_.dispose();
@@ -763,7 +764,7 @@ goog.testing.MultiTestRunner.prototype.finish_ = function() {
 
   // Remove all the test frames
   while (this.getChildCount() > 0) {
-    this.removeChildAt(0, true).disposeInternal();
+    this.removeChildAt(0, true).dispose();
   }
 
   // Compute tests that did not finish before the stop button was hit.
@@ -1279,9 +1280,7 @@ goog.testing.MultiTestRunner.TestFrame.prototype.lastStateTime_ = 0;
 goog.testing.MultiTestRunner.TestFrame.prototype.currentState_ = 0;
 
 
-/**
- * Disposes the test frame.
- */
+/** @override */
 goog.testing.MultiTestRunner.TestFrame.prototype.disposeInternal = function() {
   goog.testing.MultiTestRunner.TestFrame.superClass_.disposeInternal.call(this);
   this.dom_.removeNode(this.iframeEl_);

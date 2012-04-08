@@ -3,11 +3,10 @@
 <!--
 Copyright 2008 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <!--
-  Author: adeboor@google.com (Adam de Boor)
 -->
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -175,7 +174,7 @@ See the COPYING file for details.
   function assertMethodCalledHelper(method, caught) {
     assertTrue('exception not thrown', !!caught);
     assertEquals('exception not caught by error handler',
-        caught, errorHandler.ex);
+        caught.cause, errorHandler.ex);
     assertTrue('fake ' + method + ' not called',
         !!fakeWin[method].called);
     assertTrue('"this" not passed to original ' + method,

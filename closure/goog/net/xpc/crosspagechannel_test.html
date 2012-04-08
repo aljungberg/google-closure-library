@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <!--
-  Author: bpearcy@google.com (Brandon Pearcy)
 -->
 <html>
 <!--
 Copyright 2009 The Closure Library Authors. All Rights Reserved.
 
-Use of this source code is governed by an Apache 2.0 License.
+Use of this source code is governed by the Apache License, Version 2.0.
 See the COPYING file for details.
 -->
 <head>
@@ -15,9 +14,11 @@ See the COPYING file for details.
 <script src="../../base.js"></script>
 <script>
   goog.require('goog.Disposable');
+  goog.require('goog.Uri');
   goog.require('goog.debug.Logger');
   goog.require('goog.dom');
   goog.require('goog.net.xpc.CrossPageChannel');
+  goog.require('goog.object');
   goog.require('goog.testing.AsyncTestCase');
   goog.require('goog.testing.PropertyReplacer');
   goog.require('goog.testing.jsunit');
@@ -26,13 +27,14 @@ See the COPYING file for details.
 <body>
 <script>
 
-var IFRAME_LOAD_WAIT_MS = 2000;
+var IFRAME_LOAD_WAIT_MS = 1000;
 var stubs = new goog.testing.PropertyReplacer();
 var asyncTestCase = goog.testing.AsyncTestCase.createAndInstall(
     document.title);
 var uniqueId = 0;
 var driver;
-
+var canAccessSameDomainIframe = true;
+var accessCheckIframes = [];
 
 function setUpPage() {
   asyncTestCase.stepTimeout = 10 * 1000;
@@ -46,6 +48,8 @@ function setUpPage() {
     msgElm.innerHTML = logRecord.getMessage();
     goog.dom.appendChild(debugDiv, msgElm);
   });
+  asyncTestCase.waitForAsync('Checking if we can access same domain iframes');
+  checkSameDomainIframeAccess();
 }
 
 
@@ -60,13 +64,42 @@ function tearDown() {
 }
 
 
+function checkSameDomainIframeAccess() {
+  accessCheckIframes.push(
+      create1x1Iframe('nonexistant', 'testdata/i_am_non_existant.html'));
+  window.setTimeout(function () {
+    accessCheckIframes.push(
+        create1x1Iframe('existant', 'testdata/access_checker.html'));
+  }, 10);
+}
+
+
+function create1x1Iframe(iframeId, src) {
+  var iframeAccessChecker = goog.dom.createElement('IFRAME');
+  iframeAccessChecker.id = iframeAccessChecker.name = iframeId;
+  iframeAccessChecker.style.width = iframeAccessChecker.style.height = '1px';
+  iframeAccessChecker.src = src;
+  document.body.insertBefore(iframeAccessChecker, document.body.firstChild);
+  return iframeAccessChecker;
+}
+
+
+function sameDomainIframeAccessComplete(canAccess) {
+  canAccessSameDomainIframe  = canAccess;
+  for (var i = 0; i < accessCheckIframes.length; i++) {
+    document.body.removeChild(accessCheckIframes[i]);
+  }
+  asyncTestCase.continueTesting();
+}
+
+
 function testCreateIframeSpecifyId() {
   driver.createPeerIframe('new_iframe');
 
   asyncTestCase.waitForAsync('iframe load');
   window.setTimeout(function() {
-    asyncTestCase.continueTesting();
     driver.checkPeerIframe();
+    asyncTestCase.continueTesting();
   }, IFRAME_LOAD_WAIT_MS);
 }
 
@@ -76,8 +109,19 @@ function testCreateIframeRandomId() {
 
   asyncTestCase.waitForAsync('iframe load');
   window.setTimeout(function() {
-    asyncTestCase.continueTesting();
     driver.checkPeerIframe();
+    asyncTestCase.continueTesting();
+  }, IFRAME_LOAD_WAIT_MS);
+}
+
+
+function testCreateIframeWithDom() {
+  driver.createPeerIframe(goog.dom.getDomHelper());
+
+  asyncTestCase.waitForAsync('iframe load');
+  window.setTimeout(function() {
+    driver.checkPeerIframe();
+    asyncTestCase.continueTesting();
   }, IFRAME_LOAD_WAIT_MS);
 }
 
@@ -87,6 +131,9 @@ function testCreateIframeAsynchronousConnect() {
 
   asyncTestCase.waitForAsync('iframe load');
   window.setTimeout(function() {
+    // TODO(user): The test server has such high latency for testdata that
+    //     this timeout isn't event enough. Averages 5sec on my machine.
+    //     speed this up.
     driver.connect();
   }, IFRAME_LOAD_WAIT_MS);
 }
@@ -94,13 +141,76 @@ function testCreateIframeAsynchronousConnect() {
 
 function testCreateIframeSynchronousConnect() {
   driver.createPeerIframe('new_iframe');
+  // This connection will still get deferred on webkit.
   driver.connect();
 }
 
-
+// TODO(user): Commenting out testExistingIframeConnect test as test will take
+//     too long to test properly. Loading iframe, establishing a connection,
+//     creating another channel, connecting. Figure out how to test properly,
+/*
 function testExistingIframeConnect() {
   driver.createChannel('test_iframe');
   driver.connect();
+}
+*/
+
+function testEscapeServiceName() {
+  var escape = goog.net.xpc.CrossPageChannel.prototype.escapeServiceName_;
+  assertEquals('Shouldn\'t escape alphanumeric name',
+               'fooBar123', escape('fooBar123'));
+  assertEquals('Shouldn\'t escape most non-alphanumeric characters',
+               '`~!@#$^&*()_-=+ []{}\'";,<.>/?\\',
+               escape('`~!@#$^&*()_-=+ []{}\'";,<.>/?\\'));
+  assertEquals('Should escape %, |, and :',
+               'foo%3ABar%7C123%25', escape('foo:Bar|123%'));
+  assertEquals('Should escape tp', '%25tp', escape('tp'));
+  assertEquals('Should escape %tp', '%25%25tp', escape('%tp'));
+  assertEquals('Should not escape stp', 'stp', escape('stp'));
+  assertEquals('Should not escape s%tp', 's%25tp', escape('s%tp'));
+}
+
+function testSameDomainCheck_noMessageOrigin() {
+  var channel = new goog.net.xpc.CrossPageChannel(goog.object.create(
+      goog.net.xpc.CfgFields.PEER_HOSTNAME, 'http://foo.com'));
+  assertTrue(channel.isMessageOriginAcceptable_(undefined));
+}
+
+function testSameDomainCheck_noPeerHostname() {
+  var channel = new goog.net.xpc.CrossPageChannel({});
+  assertTrue(channel.isMessageOriginAcceptable_('http://foo.com'));
+}
+
+function testSameDomainCheck_unconfigured() {
+  var channel = new goog.net.xpc.CrossPageChannel({});
+  assertTrue(channel.isMessageOriginAcceptable_(undefined));
+}
+
+function testSameDomainCheck_originsMatch() {
+  var channel = new goog.net.xpc.CrossPageChannel(goog.object.create(
+      goog.net.xpc.CfgFields.PEER_HOSTNAME, 'http://foo.com'));
+  assertTrue(channel.isMessageOriginAcceptable_('http://foo.com'));
+}
+
+function testSameDomainCheck_originsMismatch() {
+  var channel = new goog.net.xpc.CrossPageChannel(goog.object.create(
+      goog.net.xpc.CfgFields.PEER_HOSTNAME, 'http://foo.com'));
+  assertFalse(channel.isMessageOriginAcceptable_('http://nasty.com'));
+}
+
+function testUnescapeServiceName() {
+  var unescape = goog.net.xpc.CrossPageChannel.prototype.unescapeServiceName_;
+  assertEquals('Shouldn\'t modify alphanumeric name',
+               'fooBar123', unescape('fooBar123'));
+  assertEquals('Shouldn\'t modify most non-alphanumeric characters',
+               '`~!@#$^&*()_-=+ []{}\'";,<.>/?\\',
+               unescape('`~!@#$^&*()_-=+ []{}\'";,<.>/?\\'));
+  assertEquals('Should unescape URL-escapes',
+               'foo:Bar|123%', unescape('foo%3ABar%7C123%25'));
+  assertEquals('Should unescape tp', 'tp', unescape('%25tp'));
+  assertEquals('Should unescape %tp', '%tp', unescape('%25%25tp'));
+  assertEquals('Should not escape stp', 'stp', unescape('stp'));
+  assertEquals('Should not escape s%tp', 's%tp', unescape('s%25tp'));
 }
 
 
@@ -111,6 +221,8 @@ function testExistingIframeConnect() {
  * @extends {goog.Disposable}
  */
 Driver = function() {
+  goog.Disposable.call(this);
+
   /**
    * The peer iframe.
    * @type {!Element}
@@ -142,15 +254,18 @@ Driver = function() {
 goog.inherits(Driver, goog.Disposable);
 
 
-/**
- * Disposes of the channel.
- */
+/** @override */
 Driver.prototype.disposeInternal = function() {
-  goog.net.xpc.CrossPageChannel.superClass_.disposeInternal.call(this);
-
+  // If we want to cancel the connection process before the iframe has loaded,
+  // kill the iframe/http request.
+  if (this.channel_ && !this.channel_.isConnected() &&
+      document.getElementById(this.iframeId_)) {
+    document.getElementById(this.iframeId_).src = 'about:blank';
+  }
   if (this.channel_) {
     this.channel_.dispose();
   }
+  goog.base(this, 'disposeInternal');
 };
 
 
@@ -166,10 +281,12 @@ Driver.prototype.getInnerPeer_ = function() {
 
 /**
  * Creates the channel.
- * @param {string} opt_iframeId If present, the ID of the iframe to use,
+ * @param {string=} opt_iframeId If present, the ID of the iframe to use,
  *     otherwise, tells the channel to generate an iframe ID.
+ * @param {goog.dom.DomHelper=} opt_domHelper The optional dom helper to use
+ *     for determining which window to use.
  */
-Driver.prototype.createChannel = function(opt_iframeId) {
+Driver.prototype.createChannel = function(opt_iframeId, opt_domHelper) {
   var cfg = {};
   if (opt_iframeId) {
     this.iframeId_ = opt_iframeId;
@@ -179,19 +296,37 @@ Driver.prototype.createChannel = function(opt_iframeId) {
   cfg[goog.net.xpc.CfgFields.CHANNEL_NAME] = 'test_channel' + uniqueId++;
   cfg[goog.net.xpc.CfgFields.LOCAL_POLL_URI] = 'does-not-exist.html';
   cfg[goog.net.xpc.CfgFields.PEER_POLL_URI] = 'does-not-exist.html';
+  function resolveUri(fieldName) {
+    cfg[fieldName] =
+        goog.Uri.resolve(window.location.href, cfg[fieldName]).toString();
+  }
+  resolveUri(goog.net.xpc.CfgFields.PEER_URI);
+  resolveUri(goog.net.xpc.CfgFields.LOCAL_POLL_URI);
+  resolveUri(goog.net.xpc.CfgFields.PEER_POLL_URI);
 
-  this.channel_ = new goog.net.xpc.CrossPageChannel(cfg);
+  this.channel_ = new goog.net.xpc.CrossPageChannel(cfg, opt_domHelper);
   this.channel_.registerService('msg', goog.bind(this.msgHandler_, this));
   this.cfg_ = cfg;
 };
 
 
 /**
- * Creates the peer iframe.
- * @param {string} opt_iframeId If present, the ID of the iframe to create,
- *     otherwise, generates an iframe ID.
+ * Returns the configuration of the xpc.
+ * @return {?Object} The configuration of the xpc.
  */
-Driver.prototype.createPeerIframe = function(opt_iframeId) {
+Driver.prototype.getConfiguration = function() {
+  return this.cfg_;
+};
+
+
+/**
+ * Creates the peer iframe.
+ * @param {string=} opt_iframeId If present, the ID of the iframe to create,
+ *     otherwise, generates an iframe ID.
+ * @param {goog.dom.DomHelper=} opt_domHelper The dom helper to use for
+ *     finding the elements in the iframe.
+ */
+Driver.prototype.createPeerIframe = function(opt_iframeId, opt_domHelper) {
   var expectedIframeId;
 
   if (opt_iframeId) {
@@ -206,7 +341,7 @@ Driver.prototype.createPeerIframe = function(opt_iframeId) {
   assertNull('element[id=' + expectedIframeId + '] exists',
       goog.dom.getElement(expectedIframeId));
 
-  this.createChannel(opt_iframeId);
+  this.createChannel(opt_iframeId, opt_domHelper);
   this.iframe_ = this.channel_.createPeerIframe(document.body);
 
   assertEquals(expectedIframeId, this.iframe_.id);
@@ -229,22 +364,12 @@ Driver.prototype.checkPeerIframe = function() {
  * Starts the connection. The connection happens asynchronously.
  */
 Driver.prototype.connect = function() {
-  // TODO(user): Get tests to pass for all transports
   if (!this.isTransportTestable_()) {
     asyncTestCase.continueTesting();
     return;
   }
 
-  if (this.iframe_) {
-    // When we create an iframe, we send the config
-    // and it connects itself.
-    this.childConnected_();
-  } else {
-    asyncTestCase.waitForAsync('parent and child connect');
-    var peer = this.getInnerPeer_();
-    peer.instantiateChannel(this.cfg_);
-    peer.connectChannel(goog.bind(this.childConnected_, this));
-  }
+  asyncTestCase.waitForAsync('parent and child connect');
 
   this.channel_.connect(goog.bind(this.parentConnected_, this));
 };
@@ -258,16 +383,18 @@ Driver.prototype.connect = function() {
  * @private
  */
 Driver.prototype.isTransportTestable_ = function() {
-  var testable = true;
+  var testable = false;
 
   var transportType = this.channel_.determineTransportType_();
   switch (transportType) {
-    case goog.net.xpc.TransportTypes.NATIVE_MESSAGING:
     case goog.net.xpc.TransportTypes.IFRAME_RELAY:
     case goog.net.xpc.TransportTypes.IFRAME_POLLING:
+      testable = canAccessSameDomainIframe;
+      break;
+    case goog.net.xpc.TransportTypes.NATIVE_MESSAGING:
     case goog.net.xpc.TransportTypes.FLASH:
     case goog.net.xpc.TransportTypes.NIX:
-      testable = false;
+      testable = true;
       break;
   }
 
@@ -285,19 +412,18 @@ Driver.prototype.parentConnected_ = function() {
     asyncTestCase.waitForAsync('child echo');
   } else {
     asyncTestCase.waitForAsync('child connect');
+    return;
   }
-
-  this.channel_.send('echo', 'hello')
+  this.channel_.send('echo', 'hello');
 };
 
 
 /**
  * Callback for the child connection.
- * @private
  */
-Driver.prototype.childConnected_ = function() {
+Driver.prototype.childConnected = function() {
   if (this.channel_.isConnected()) {
-    asyncTestCase.waitForAsync('child echo');
+    this.parentConnected_();
   } else {
     asyncTestCase.waitForAsync('parent connect');
   }
@@ -322,9 +448,9 @@ Driver.prototype.msgHandler_ = function(payload) {
 </script>
 
 <!-- Debug box. -->
-<div style="position:absolute; float: right; top: 10px; right: 10px">
+<div style="position:absolute; float: right; top: 10px; right: 10px; width: 500px">
 Debug [<a href="#" onclick="document.getElementById('debugDiv').innerHTML = '';">clear</a>]: <br/>
-<div id="debugDiv" style="border: 1px #000000 solid; font-size:xx-small"></div>
+<div id="debugDiv" style="border: 1px #000000 solid; font-size:xx-small; background: #fff;"></div>
 </div>
 
 <!--
@@ -332,8 +458,15 @@ Setup inner peer. This must be done in the <body>, so that the inner peer iframe
 blocks the onload event in this window until it is fully loaded. The JsUnit
 tests will execute after the onload event fires.
 -->
-<iframe name=test_iframe id=test_iframe src=testdata/inner_peer.html width=300 height=250>
+<!--
+TODO(user): Commenting out testExistingIframeConnect test as test will take
+    too long to test properly. Loading iframe, establishing a connection,
+    creating another channel, connecting. Figure out how to test properly,
+<iframe name=test_iframe id=test_iframe src=testdata/inner_peer.html width=100% height=100%>
 </iframe>
+-->
+
+
 
 </body>
 </html>

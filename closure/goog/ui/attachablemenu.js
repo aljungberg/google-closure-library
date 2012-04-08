@@ -15,7 +15,6 @@
 /**
  * @fileoverview Definition of the AttachableMenu class.
  *
- *
  */
 
 goog.provide('goog.ui.AttachableMenu');
@@ -25,6 +24,7 @@ goog.require('goog.dom.a11y.State');
 goog.require('goog.events.KeyCodes');
 goog.require('goog.ui.ItemEvent');
 goog.require('goog.ui.MenuBase');
+
 
 
 /**
@@ -64,12 +64,14 @@ goog.ui.AttachableMenu.prototype.selectedElement_ = null;
  */
 goog.ui.AttachableMenu.prototype.itemClassName_ = 'menu-item';
 
+
 /**
  * Class name to append to a menu item's class when it's selected
  * @type {string}
  * @private
  */
 goog.ui.AttachableMenu.prototype.selectedItemClassName_ = 'menu-item-selected';
+
 
 /**
  * Keep track of when the last key was pressed so that a keydown-scroll doesn't
@@ -80,7 +82,7 @@ goog.ui.AttachableMenu.prototype.selectedItemClassName_ = 'menu-item-selected';
 goog.ui.AttachableMenu.prototype.lastKeyDown_ = goog.now();
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.AttachableMenu.prototype.disposeInternal = function() {
   goog.ui.AttachableMenu.superClass_.disposeInternal.call(this);
   this.selectedElement_ = null;
@@ -105,6 +107,7 @@ goog.ui.AttachableMenu.prototype.getItemClassName = function() {
 goog.ui.AttachableMenu.prototype.setItemClassName = function(name) {
   this.itemClassName_ = name;
 };
+
 
 /**
  * Sets the class name to use for selected menu items
@@ -185,7 +188,7 @@ goog.ui.AttachableMenu.prototype.setSelectedItem = function(elt) {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.ui.AttachableMenu.prototype.showPopupElement = function() {
   // The scroll position cannot be set for hidden (display: none) elements in
   // gecko browsers.
@@ -301,7 +304,7 @@ goog.ui.AttachableMenu.prototype.onMouseOut = function(e) {
 
 /**
  * Mouse down handler for the menu. Prevents default to avoid text selection.
- * @param {goog.events.Event} e The event object.
+ * @param {!goog.events.Event} e The event object.
  * @protected
  */
 goog.ui.AttachableMenu.prototype.onMouseDown = goog.events.Event.preventDefault;
@@ -363,6 +366,7 @@ goog.ui.AttachableMenu.prototype.onKeyDown = function(e) {
 
   this.dispatchEvent(e);
 };
+
 
 /**
  * Find an item that has the given prefix and select it.

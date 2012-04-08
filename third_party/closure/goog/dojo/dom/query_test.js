@@ -2,6 +2,8 @@ goog.require('goog.dom');
 goog.require('goog.dom.query');
 goog.require('goog.testing.asserts');  // assertThrows
 
+goog.setTestOnly('query_test');
+
 function testBasicSelectors() {
   assertQuery(4, 'h3');
   assertQuery(1, 'h1:first-child');
@@ -149,7 +151,12 @@ function testCorrectDocumentInFrame() {
                   frameDocument.getElementById('if3'));
 }
 
+/**
+ * @param {number} expectedNumberOfNodes
+ * @param {...*} var_args
+ */
 function assertQuery(expectedNumberOfNodes, var_args) {
   var args = Array.prototype.slice.call(arguments, 1);
-  assertEquals(expectedNumberOfNodes, goog.dom.query.apply(goog.dom, args).length);
+  assertEquals(expectedNumberOfNodes,
+               goog.dom.query.apply(null, args).length);
 }

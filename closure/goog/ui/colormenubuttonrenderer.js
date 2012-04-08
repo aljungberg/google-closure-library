@@ -16,7 +16,7 @@
  * @fileoverview Renderer for {@link goog.ui.ColorMenuButton}s.
  *
  * @author robbyw@google.com (Robby Walker)
- *
+ * @author attila@google.com (Attila Bodis)
  */
 
 goog.provide('goog.ui.ColorMenuButtonRenderer');
@@ -26,6 +26,8 @@ goog.require('goog.dom.classes');
 goog.require('goog.ui.ControlContent');
 goog.require('goog.ui.MenuButtonRenderer');
 goog.require('goog.userAgent');
+
+
 
 /**
  * Renderer for {@link goog.ui.ColorMenuButton}s.
@@ -119,7 +121,7 @@ goog.ui.ColorMenuButtonRenderer.setCaptionValue = function(caption, value) {
     }
 
     // Stupid IE6/7 doesn't do transparent borders.
-    // TODO(user): Add user-agent version check when IE8 comes out...
+    // TODO(attila): Add user-agent version check when IE8 comes out...
     caption.firstChild.style.borderBottomColor = hexColor ||
         (goog.userAgent.IE ? '' : 'transparent');
   }

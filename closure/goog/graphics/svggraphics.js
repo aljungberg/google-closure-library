@@ -15,8 +15,8 @@
 
 /**
  * @fileoverview SvgGraphics sub class that uses SVG to draw the graphics.
- *
- *
+ * @author arv@google.com (Erik Arvidsson)
+ * @author yoah@google.com (Yoah Bar-David)
  */
 
 goog.provide('goog.graphics.SvgGraphics');
@@ -37,7 +37,9 @@ goog.require('goog.graphics.SvgPathElement');
 goog.require('goog.graphics.SvgRectElement');
 goog.require('goog.graphics.SvgTextElement');
 goog.require('goog.math.Size');
+goog.require('goog.style');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -192,7 +194,7 @@ goog.graphics.SvgGraphics.prototype.setElementFill = function(element, fill) {
                  fill.getColor1() + '-' + fill.getColor2();
     // It seems that the SVG version accepts opacity where the VML does not
 
-    var id = this.getDef_(defKey);
+    var id = this.getDef(defKey);
 
     if (!id) { // No def for this yet, create it
       // Create the gradient def entry (only linear gradient are supported)
@@ -204,8 +206,12 @@ goog.graphics.SvgGraphics.prototype.setElementFill = function(element, fill) {
         'gradientUnits': 'userSpaceOnUse'
       });
 
-      var stop1 = this.createSvgElement_('stop',
-          {'offset': '0%', 'style': 'stop-color:' + fill.getColor1()});
+      var gstyle = 'stop-color:' + fill.getColor1();
+      if (goog.isNumber(fill.getOpacity1())) {
+        gstyle += ';stop-opacity:' + fill.getOpacity1();
+      }
+      var stop1 = this.createSvgElement_(
+          'stop', {'offset': '0%', 'style': gstyle});
       gradient.appendChild(stop1);
 
       // LinearGradients don't have opacity in VML so implement that before
@@ -213,9 +219,12 @@ goog.graphics.SvgGraphics.prototype.setElementFill = function(element, fill) {
       // if (fill.getOpacity() != null) {
       //   gstyles += 'opacity:' + fill.getOpacity() + ';'
       // }
-
-      var stop2 = this.createSvgElement_('stop',
-          {'offset': '100%', 'style': 'stop-color:' + fill.getColor2()});
+      gstyle = 'stop-color:' + fill.getColor2();
+      if (goog.isNumber(fill.getOpacity2())) {
+        gstyle += ';stop-opacity:' + fill.getOpacity2();
+      }
+      var stop2 = this.createSvgElement_(
+          'stop', {'offset': '100%', 'style': gstyle});
       gradient.appendChild(stop2);
 
       // LinearGradients don't have opacity in VML so implement that before
@@ -224,7 +233,7 @@ goog.graphics.SvgGraphics.prototype.setElementFill = function(element, fill) {
       //   gstyles += 'opacity:' + fill.getOpacity() + ';'
       // }
 
-      id = this.addDef_(defKey, gradient);
+      id = this.addDef(defKey, gradient);
     }
 
     // Link element to linearGradient definition
@@ -394,11 +403,11 @@ goog.graphics.SvgGraphics.prototype.updateManualViewBox_ = function() {
  */
 goog.graphics.SvgGraphics.prototype.setSize = function(pixelWidth,
     pixelHeight) {
-  // TODO(user) implement
+  goog.style.setSize(this.getElement(), pixelWidth, pixelHeight);
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.SvgGraphics.prototype.getPixelSize = function() {
   if (!goog.userAgent.GECKO) {
     return this.isInDocument() ?
@@ -701,9 +710,8 @@ goog.graphics.SvgGraphics.prototype.getTextWidth = function(text, font) {
  * @param {Element} defElement DOM element to add as a definition. It must
  *     have an id attribute set.
  * @return {string} The assigned id of the defElement.
- * @private
  */
-goog.graphics.SvgGraphics.prototype.addDef_ = function(defKey, defElement) {
+goog.graphics.SvgGraphics.prototype.addDef = function(defKey, defElement) {
   if (defKey in this.defs_) {
     return this.defs_[defKey];
   }
@@ -723,16 +731,29 @@ goog.graphics.SvgGraphics.prototype.addDef_ = function(defKey, defElement) {
  * Returns the id of a definition element.
  * @param {string} defKey This is a key that should be unique in a way that
  *     if two definitions are equal the should have the same key.
- * @return {string} The id of the found definition element or null if
+ * @return {?string} The id of the found definition element or null if
  *     not found.
- * @private
  */
-goog.graphics.SvgGraphics.prototype.getDef_ = function(defKey) {
+goog.graphics.SvgGraphics.prototype.getDef = function(defKey) {
   return defKey in this.defs_ ? this.defs_[defKey] : null;
 };
 
+/**
+ * Removes a definition of an elemnt from the global definitions.
+ * @param {string} defKey This is a key that should be unique in a way that
+ *     if two definitions are equal they should have the same key.
+ */
+goog.graphics.SvgGraphics.prototype.removeDef = function(defKey) {
+  var id = this.getDef(defKey);
+  if (id)  {
+    var element = this.dom_.getElement(id);
+    this.defsElement_.removeChild(element);
+    delete this.defs_[defKey];
+  }
+};
 
-/** @inheritDoc */
+
+/** @override */
 goog.graphics.SvgGraphics.prototype.enterDocument = function() {
   var oldPixelSize = this.getPixelSize();
   goog.graphics.SvgGraphics.superClass_.enterDocument.call(this);
@@ -761,7 +782,7 @@ goog.graphics.SvgGraphics.prototype.enterDocument = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.SvgGraphics.prototype.exitDocument = function() {
   goog.graphics.SvgGraphics.superClass_.exitDocument.call(this);
 
@@ -776,6 +797,8 @@ goog.graphics.SvgGraphics.prototype.exitDocument = function() {
 /**
  * Disposes of the component by removing event handlers, detacing DOM nodes from
  * the document body, and removing references to them.
+ * @override
+ * @protected
  */
 goog.graphics.SvgGraphics.prototype.disposeInternal = function() {
   delete this.defs_;
@@ -808,7 +831,7 @@ goog.graphics.SvgGraphics.getResizeCheckTimer_ = function() {
 };
 
 
-/** @inheritDoc */
+/** @override */
 goog.graphics.SvgGraphics.prototype.isDomClonable = function() {
   return true;
 };

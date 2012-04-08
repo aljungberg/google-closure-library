@@ -29,6 +29,7 @@ goog.require('goog.dom.browserrange.W3cRange');
 goog.require('goog.userAgent');
 
 
+
 /**
  * The constructor for WebKit specific browser ranges.
  * @param {Range} range The range object.
@@ -68,7 +69,8 @@ goog.dom.browserrange.WebKitRange.createFromNodes = function(startNode,
           startOffset, endNode, endOffset));
 };
 
-/** @inheritDoc */
+
+/** @override */
 goog.dom.browserrange.WebKitRange.prototype.compareBrowserRangeEndpoints =
     function(range, thisEndpoint, otherEndpoint) {
   // Webkit pre-528 has some bugs where compareBoundaryPoints() doesn't work the
@@ -91,7 +93,8 @@ goog.dom.browserrange.WebKitRange.prototype.compareBrowserRangeEndpoints =
       /** @type {Range} */ (range));
 };
 
-/** @inheritDoc */
+
+/** @override */
 goog.dom.browserrange.WebKitRange.prototype.selectInternal = function(
     selection, reversed) {
   // Unselect everything. This addresses a bug in Webkit where it sometimes

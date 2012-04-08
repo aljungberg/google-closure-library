@@ -16,8 +16,6 @@
  * @fileoverview
  * XML utilities.
  *
- *
- *
  */
 
 goog.provide('goog.dom.xml');
@@ -156,6 +154,23 @@ goog.dom.xml.selectNodes = function(node, path) {
     return results;
   } else {
     return [];
+  }
+};
+
+
+/**
+ * Sets multiple attributes on an element. Differs from goog.dom.setProperties
+ * in that it exclusively uses the element's setAttributes method. Use this
+ * when you need to ensure that the exact property is available as an attribute
+ * and can be read later by the native getAttribute method.
+ * @param {!Element} element XML or DOM element to set attributes on.
+ * @param {!Object.<string, string>} attributes Map of property:value pairs.
+ */
+goog.dom.xml.setAttributes = function(element, attributes) {
+  for (var key in attributes) {
+    if (attributes.hasOwnProperty(key)) {
+      element.setAttribute(key, attributes[key]);
+    }
   }
 };
 

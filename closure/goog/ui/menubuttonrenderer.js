@@ -15,7 +15,7 @@
 /**
  * @fileoverview Renderer for {@link goog.ui.MenuButton}s and subclasses.
  *
- *
+ * @author attila@google.com (Attila Bodis)
  */
 
 goog.provide('goog.ui.MenuButtonRenderer');
@@ -27,6 +27,7 @@ goog.require('goog.ui.INLINE_BLOCK_CLASSNAME');
 goog.require('goog.ui.Menu');
 goog.require('goog.ui.MenuRenderer');
 goog.require('goog.userAgent');
+
 
 
 /**
@@ -115,7 +116,7 @@ goog.ui.MenuButtonRenderer.prototype.getContentElement = function(element) {
  * @return {Element} Decorated element.
  */
 goog.ui.MenuButtonRenderer.prototype.decorate = function(button, element) {
-  // TODO(user):  Add more robust support for subclasses of goog.ui.Menu.
+  // TODO(attila):  Add more robust support for subclasses of goog.ui.Menu.
   var menuElem = goog.dom.getElementsByTagNameAndClass(
       '*', goog.ui.MenuRenderer.CSS_CLASS, element)[0];
   if (menuElem) {

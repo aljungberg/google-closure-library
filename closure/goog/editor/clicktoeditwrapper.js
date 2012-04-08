@@ -35,11 +35,11 @@ goog.require('goog.dom.TagName');
 goog.require('goog.editor.BrowserFeature');
 goog.require('goog.editor.Command');
 goog.require('goog.editor.Field.EventType');
-goog.require('goog.editor.node');
 goog.require('goog.editor.range');
 goog.require('goog.events.BrowserEvent.MouseButton');
 goog.require('goog.events.EventHandler');
 goog.require('goog.events.EventType');
+
 
 
 /**
@@ -49,6 +49,8 @@ goog.require('goog.events.EventType');
  * @extends {goog.Disposable}
  */
 goog.editor.ClickToEditWrapper = function(fieldObj) {
+  goog.Disposable.call(this);
+
   /**
    * The field this wrapper interacts with.
    * @type {goog.editor.Field}
@@ -132,9 +134,7 @@ goog.editor.ClickToEditWrapper.prototype.getOriginalDomHelper = function() {
 };
 
 
-/**
- * Destroy the wrapper.
- */
+/** @override */
 goog.editor.ClickToEditWrapper.prototype.disposeInternal = function() {
   goog.base(this, 'disposeInternal');
   this.exitDocument();
@@ -225,7 +225,8 @@ goog.editor.ClickToEditWrapper.prototype.shouldHandleMouseEvent_ = function(e) {
 goog.editor.ClickToEditWrapper.prototype.handleClick_ = function(e) {
   // If the user clicked on a link in an uneditable field,
   // we want to cancel the click.
-  var anchorAncestor = goog.dom.getAncestorByTagNameAndClass(e.target,
+  var anchorAncestor = goog.dom.getAncestorByTagNameAndClass(
+      /** @type {Node} */ (e.target),
       goog.dom.TagName.A);
   if (anchorAncestor) {
     e.preventDefault();
@@ -371,7 +372,7 @@ goog.editor.ClickToEditWrapper.prototype.makeFieldEditable = function(field) {
 
 /**
  * Gets a saved caret range for the given range.
- * @param {?goog.dom.AbstractRange} range A range wrapper.
+ * @param {goog.dom.AbstractRange} range A range wrapper.
  * @return {goog.dom.SavedCaretRange} The range, saved with carets, or null
  *    if the range wrapper was null.
  * @private
@@ -409,7 +410,7 @@ goog.editor.ClickToEditWrapper.prototype.insertCarets_ = function() {
     // document.activeElement. In FF, we have to be more hacky.
     var specialNodeClicked;
     if (goog.editor.BrowserFeature.HAS_ACTIVE_ELEMENT) {
-      specialNodeClicked = goog.editor.node.getActiveElementIE(
+      specialNodeClicked = goog.dom.getActiveElement(
           this.originalDomHelper_.getDocument());
     } else {
       specialNodeClicked = this.savedAnchorClicked_;

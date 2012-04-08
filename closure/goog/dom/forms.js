@@ -15,14 +15,15 @@
 /**
  * @fileoverview Utilities for manipulating a form and elements.
  *
- *
- *
- *
+ * @author arv@google.com (Erik Arvidsson)
+ * @author jonp@google.com (Jon Perlow)
+ * @author elsigh@google.com (Lindsey Simon)
  */
 
 goog.provide('goog.dom.forms');
 
 goog.require('goog.structs.Map');
+
 
 /**
  * Returns form data as a map of name to value arrays. This doesn't
@@ -239,6 +240,7 @@ goog.dom.forms.getValue = function(el) {
 /**
  * Alias for goog.dom.form.element.getValue
  * @type {Function}
+ * @deprecated Use {@link goog.dom.forms.getValue} instead.
  */
 goog.dom.$F = goog.dom.forms.getValue;
 
